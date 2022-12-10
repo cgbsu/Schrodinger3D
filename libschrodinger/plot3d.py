@@ -1,3 +1,4 @@
+import sys
 import pyqtgraph as pg
 import pyqtgraph.opengl as pggl
 from pyqtgraph.Qt import QtCore, QtGui
@@ -10,6 +11,10 @@ from libschrodinger.numerov3d import MeshGrid
 from libschrodinger.numerov3d import WaveFunctions
 
 MAXIMUM_32_BITS = 2 ** 32
+MAXIMUM_24_BITS = 2 ** 24
+MAXIMUM_16_BITS = 2 ** 16
+MAXIMUM_8_BITS = 2 ** 8
+COLOR_COMPONENT_MAGNITUDE = 255 ** 2
 
 def normalizeData(data : np.ndarray, threshold = 1e-32): 
     maximum = data.max()
@@ -22,6 +27,38 @@ def normalizeData(data : np.ndarray, threshold = 1e-32):
     #if checkMinimum <= threshold: 
     #    normalized = normalized / checkMinimum
     return normalized
+
+def normalizeTo4x8BitScaledColor(normalizedData : np.ndarray, alpha) -> np.ndarray: 
+    normalizedMinimum = normalizedData.min()
+    normalizedMaximum = normalizedData.max()
+    unsigned32 = np.uint32(np.round(normalizedData * MAXIMUM_24_BITS))
+    output = np.zeros(normalizedData.shape + (4, ), dtype = np.ubyte)
+    ratios = [
+            1, 
+            MAXIMUM_16_BITS / MAXIMUM_24_BITS, 
+            MAXIMUM_8_BITS / MAXIMUM_16_BITS
+        ] # Each color component will be descendingly scaled by one of these values as smaller parts of the number
+    print(sys.byteorder)
+    if sys.byteorder == "little": 
+        ratios = list(reversed(ratios))
+    for ii in range(3): 
+        output[..., ii] = np.ubyte((unsigned32 >> (ii * 8)) * ratios[ii])
+    output[..., 3] = alpha
+    print(output)
+    return output
+
+
+def normalizeTo4x8BitColor(normalizedData : np.ndarray, alpha) -> np.ndarray: 
+    normalizedMinimum = normalizedData.min()
+    normalizedMaximum = normalizedData.max()
+    #assert normalizedMaximum <= 1 and normalizedMinimum >= 0 \
+    #        "Normalized data must be between 0 and one 1"
+    unsigned32 = np.uint32(np.round(normalizedData * MAXIMUM_24_BITS))
+    output = np.zeros(normalizedData.shape + (4, ), dtype = np.ubyte)
+    for ii in range(3): 
+        output[..., ii] = np.ubyte(unsigned32 >> (ii * 8))
+    output[..., 3] = alpha
+    return output
 
 def normalizeTo4x8Bits(normalizedData : np.ndarray) -> np.ndarray: 
     normalizedMinimum = normalizedData.min()
@@ -53,7 +90,7 @@ class GPUPlot3D:
                 0, 
                 self.normalizedData
             )
-        self.colors = normalizeTo4x8Bits(self.normalizedData)
+        self.colors = normalizeTo4x8BitScaledColor(self.normalizedData, 50)
         self.view = pggl.GLViewWidget()
         self.view.show()
         self.grid = pggl.GLGridItem()
