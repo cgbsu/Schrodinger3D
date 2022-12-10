@@ -19,7 +19,6 @@ def main():
         waves = computeWaveFunction(potential)
         currentEnergy = 0
         application = pg.mkQApp()
-        print("HI")
         plot = GPUPlot3D(application, waves.waveFunctions[currentEnergy])#waves.decibleProbabilities[currentEnergy])
         application.instance().exec()
 

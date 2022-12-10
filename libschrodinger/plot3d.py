@@ -15,17 +15,21 @@ MAXIMUM_24_BITS = 2 ** 24
 MAXIMUM_16_BITS = 2 ** 16
 MAXIMUM_8_BITS = 2 ** 8
 COLOR_COMPONENT_MAGNITUDE = 255 ** 2
+FLOAT_32_EPSILON = np.finfo(np.float32).eps
 
-def normalizeData(data : np.ndarray, threshold = 1e-32): 
+def normalizeData(data : np.ndarray, threshold = FLOAT_32_EPSILON, divideOut = False, zeroOut = False): 
     maximum = data.max()
     normalized = data
     if maximum < 0:
         maximum = np.abs(maximum)
         normalized = data + (2 * maximum)
     normalized = normalized / maximum
-    checkMinimum = normalized.min()
-    #if checkMinimum <= threshold: 
-    #    normalized = normalized / checkMinimum
+    if divideOut == True: 
+        checkMinimum = normalized.min()
+        if checkMinimum <= threshold: 
+            normalized = normalized / checkMinimum
+    elif zeroOut == True: 
+        normalized = np.where(normalized < threshold, 0, normalized)
     return normalized
 
 def normalizeTo4x8BitScaledColor(normalizedData : np.ndarray, alpha) -> np.ndarray: 
@@ -38,13 +42,11 @@ def normalizeTo4x8BitScaledColor(normalizedData : np.ndarray, alpha) -> np.ndarr
             MAXIMUM_16_BITS / MAXIMUM_24_BITS, 
             MAXIMUM_8_BITS / MAXIMUM_16_BITS
         ] # Each color component will be descendingly scaled by one of these values as smaller parts of the number
-    print(sys.byteorder)
     if sys.byteorder == "little": 
         ratios = list(reversed(ratios))
     for ii in range(3): 
         output[..., ii] = np.ubyte((unsigned32 >> (ii * 8)) * ratios[ii])
     output[..., 3] = alpha
-    print(output)
     return output
 
 
@@ -81,8 +83,9 @@ def normalizeTo4x8BitsStaticAlpha(alpha, normalizedData : np.ndarray) -> np.ndar
     output[..., 0] = 0
     return output
 
+
 class GPUPlot3D: 
-    def __init__(self, application, data : np.ndarray, noiseLevel = 1e-32):
+    def __init__(self, application, data : np.ndarray, noiseLevel = FLOAT_32_EPSILON, alpha = 50, position = None):
         self.application = application
         self.normalizedData = normalizeData(data, noiseLevel) 
         self.normalizedData = np.where(
@@ -90,15 +93,28 @@ class GPUPlot3D:
                 0, 
                 self.normalizedData
             )
-        self.colors = normalizeTo4x8BitScaledColor(self.normalizedData, 50)
+        self.pointCount = data.shape[0] 
+        self.colors = normalizeTo4x8BitScaledColor(self.normalizedData, alpha)
         self.view = pggl.GLViewWidget()
         self.view.show()
         self.grid = pggl.GLGridItem()
         self.plot = pggl.GLVolumeItem(self.colors)
         self.axis = pggl.GLAxisItem()
+        #self.axisY = pggl.GLAxisItem()
+        #self.axisZ = pggl.GLAxisItem()
         self.view.addItem(self.grid)
         self.view.addItem(self.plot)
         self.view.addItem(self.axis)
+        #self.view.addItem(self.axisY)
+        #self.view.addItem(self.axisZ)
+        self.centeredCoordinates = np.array([
+                self.pointCount / 2,
+                self.pointCount / 2, 
+                self.pointCount / 2
+            ])
+        self.position = position - self.centeredCoordinates \
+                if position else self.centeredCoordinates
+        self.grid.translate(*tuple(self.position))
 
 
 
