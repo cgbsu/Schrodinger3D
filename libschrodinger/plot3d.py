@@ -96,7 +96,6 @@ class GPUPlot3D:
         self.pointCount = data.shape[0] 
         self.colors = normalizeTo4x8BitScaledColor(self.normalizedData, alpha)
         self.view = pggl.GLViewWidget()
-        self.view.show()
         self.grid = pggl.GLGridItem()
         self.plot = pggl.GLVolumeItem(self.colors)
         self.axis = pggl.GLAxisItem()
@@ -115,6 +114,7 @@ class GPUPlot3D:
         self.position = position - self.centeredCoordinates \
                 if position else self.centeredCoordinates
         self.grid.translate(*tuple(self.position))
+        self.view.show()
 
 
 
@@ -125,7 +125,10 @@ class Plot3D:
                grid : MeshGrid, 
                potential : np.ndarray, 
                waves : WaveFunctions, 
-               properties : list[bool] = [True, True, True, True]
+               properties : list[bool] = [True, True, True, True], 
+               pointSize = .001, 
+               alpha = .6, 
+               antiAliasing = False
            ):
         self.figure = None
         self.currentEnergyIndex = currentEnergyIndex
@@ -133,6 +136,12 @@ class Plot3D:
         self.potential = potential
         self.waves = waves
         self.properties = properties 
+        self.pointSize = pointSize
+        self.alpha = alpha
+        self.antiAliasing = antiAliasing
+        self.scatterPlots = []
+        self.axis = []
+        self.colorBars = []
         self.plot()
 
     def nextEnergy(self, event):
@@ -166,19 +175,34 @@ class Plot3D:
         axis = []
         for ii in range(4): 
             if self.properties[ii] == True: 
-                axis.append(self.figure.add_subplot(2, 2, ii + 1, projection="3d"))
-                scatter = axis[-1].scatter3D(
-                        self.grid.x, 
-                        self.grid.y, 
-                        self.grid.z, 
-                        c = toPlot[ii], 
-                        cmap = cm.seismic, 
-                        s = 1, 
-                        alpha = .6, 
-                        antialiased = True
-                    )
-                axis[-1].set_title(titles[ii])
-                self.figure.colorbar(scatter)
+                if len(self.axis) <= ii: 
+                    self.axis.append(self.figure.add_subplot(2, 2, ii + 1, projection="3d"))
+                    self.scatterPlots.append(self.axis[-1].scatter3D(
+                            self.grid.x, 
+                            self.grid.y, 
+                            self.grid.z, 
+                            c = toPlot[ii], 
+                            cmap = cm.seismic, 
+                            s = self.pointSize, 
+                            alpha = self.alpha, 
+                            antialiased = self.antiAliasing
+                        ))
+                    self.axis[-1].set_title(titles[ii])
+                    self.colorBars.append(self.figure.colorbar(self.scatterPlots[-1]))
+                else: 
+                    self.scatterPlots[ii] = self.axis[ii].scatter3D(
+                            self.grid.x, 
+                            self.grid.y, 
+                            self.grid.z, 
+                            c = toPlot[ii], 
+                            cmap = cm.seismic, 
+                            s = self.pointSize, 
+                            alpha = self.alpha, 
+                            antialiased = self.antiAliasing
+                        )
+                    self.colorBars[ii].remove()
+                    self.colorBars[ii] = self.figure.colorbar(self.scatterPlots[ii])
+        print("Done Plotting Energy")
         plt.show()
     
 # https://matplotlib.org/stable/gallery/event_handling/image_slices_viewer.html

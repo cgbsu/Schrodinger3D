@@ -10,11 +10,11 @@ def hydrogenAtom(grid : MeshGrid, centerX, centerY, centerZ, bottom, potential) 
         ))
 
 def main(): 
-    matplotlib.use('QtAgg')
+    matplotlib.use('TkAgg')
     with cp.cuda.Device(0): 
-        pointCount : int = 15
+        pointCount : int = 150
         grid = makeLinspaceGrid(pointCount, 1, 3)
-        potential = hydrogenAtom(grid, .5, .5, .5, 1e+3, 1)
+        potential = hydrogenAtom(grid, .5, .5, .5, .1, 1)
         print("Built potential, calculating wave functions")
         waves = computeWaveFunction(potential)
         print("Done computing wave functions, with corresponding energies, please wait for graphical output.")
