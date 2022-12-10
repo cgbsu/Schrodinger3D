@@ -19,8 +19,8 @@ def normalizeData(data : np.ndarray, threshold = 1e-32):
         normalized = data + (2 * maximum)
     normalized = normalized / maximum
     checkMinimum = normalized.min()
-    if checkMinimum <= threshold: 
-        normalized = normalized / (checkMinimum * maximum)
+    #if checkMinimum <= threshold: 
+    #    normalized = normalized / checkMinimum
     return normalized
 
 def normalizeTo4x8Bits(normalizedData : np.ndarray) -> np.ndarray: 
@@ -45,15 +45,15 @@ def normalizeTo4x8BitsStaticAlpha(alpha, normalizedData : np.ndarray) -> np.ndar
     return output
 
 class GPUPlot3D: 
-    def __init__(self, application, data : np.ndarray, noiseLevel = 1e-16):
+    def __init__(self, application, data : np.ndarray, noiseLevel = 1e-32):
         self.application = application
-        self.normalizedData = normalizeData(data) 
+        self.normalizedData = normalizeData(data, noiseLevel) 
         self.normalizedData = np.where(
                 self.normalizedData < noiseLevel, 
                 0, 
                 self.normalizedData
             )
-        self.colors = normalizeTo4x8BitsStaticAlpha(150, self.normalizedData)
+        self.colors = normalizeTo4x8Bits(self.normalizedData)
         self.view = pggl.GLViewWidget()
         self.view.show()
         self.grid = pggl.GLGridItem()
