@@ -9,24 +9,52 @@ from libschrodinger.numerov3d import DimensionIndex
 from libschrodinger.numerov3d import MeshGrid
 from libschrodinger.numerov3d import WaveFunctions
 
+MAXIMUM_32_BITS = 2 ** 32
+
+def normalizeData(data : np.ndarray, threshold = 1e-10): 
+    maximum = data.max()
+    print("Max: ", maximum)
+    print("Min: ", data.min())
+    normalized = data
+    if maximum < 0:
+        maximum = np.abs(maximum)
+        normalized = data + (2 * maximum)
+        print("New max: ", normalized.max())
+        print("New min: ", normalized.max())
+    normalized = normalized / maximum
+    print("Normalized Max: ", normalized.max())
+    checkMinimum = normalized.min()
+    print("Check Minimum: ", checkMinimum)
+    if checkMinimum <= threshold: 
+        normalized = normalized / (checkMinimum * maximum)
+        print("Entered threshold ", normalized.max(), " ", normalized.max())
+    print("\nN: ", normalized)
+    return normalized
+
+def normalizeTo4x8Bits(normalizedData : np.ndarray) -> np.ndarray: 
+    normalizedMinimum = normalizedData.min()
+    normalizedMaximum = normalizedData.max()
+    print("Recieved min", normalizedMinimum)
+    print("Recieved max", normalizedMaximum)
+    #assert normalizedMaximum <= 1 and normalizedMinimum >= 0 \
+    #        "Normalized data must be between 0 and one 1"
+    unsigned32 = np.uint32(np.round(normalizedData * MAXIMUM_32_BITS))
+    output = np.zeros(normalizedData.shape + (4, ), dtype = np.ubyte)
+    for ii in range(4): 
+        output[..., ii] = np.ubyte(unsigned32 >> (ii * 8))
+    return output
+
+
 class GPUPlot3D: 
-    def __init__(self, application, data : np.ndarray, lower = 0, upper = 10):
-        assert False, "Broken"
+    def __init__(self, application, data : np.ndarray, noiseLevel = 1e-16):
         self.application = application
-        #self.grid = grid.toArray()
-        self.data = data
-        self.colors = np.empty(data.shape + (4,), dtype=np.ubyte)
-        self.decibles = -10 * np.log10(self.data)
-        self.max = self.decibles.max()
-        self.min = self.decibles.min() * .75
-        print(self.data)
-        self.colors[..., 0] = self.data % 255 #self.decibles
-        #np.where(
-        #        (self.decibles > self.max) & (self.decibles < self.min), 
-        #        0, 
-        #        self.decibles
-        #    )
-        self.colors[..., 3] = 150#(self.colors[..., 0] * 255) % 255
+        self.normalizedData = normalizeData(data) 
+        self.normalizedData = np.where(
+                self.normalizedData < noiseLevel, 
+                0, 
+                self.normalizedData
+            )
+        self.colors = normalizeTo4x8Bits(self.normalizedData)
         self.view = pggl.GLViewWidget()
         self.view.show()
         self.grid = pggl.GLGridItem()
@@ -93,7 +121,7 @@ class Plot3D:
                         self.grid.z, 
                         c = toPlot[ii], 
                         cmap = cm.seismic, 
-                        s = 0.001, 
+                        s = 1, 
                         alpha = .6, 
                         antialiased = True
                     )

@@ -2,19 +2,19 @@ from libschrodinger.numerov3d import *
 from libschrodinger.plot3d import *
 
 def hydrogenAtom(grid : MeshGrid, centerX, centerY, centerZ, bottom, potential) -> np.ndarray: 
-    return np.sqrt(
+    return potential / (np.sqrt(
             (grid.x - centerX) ** 2 \
             + (grid.y - centerY) ** 2 \
             + (grid.z - centerZ) ** 2 \
             + bottom ** 2 \
-        ) / potential
+        ))
 
 def main(): 
     matplotlib.use('QtAgg')
     with cp.cuda.Device(0): 
-        pointCount : int = 50
+        pointCount : int = 15
         grid = makeLinspaceGrid(pointCount, 1, 3)
-        potential = hydrogenAtom(grid, .5, .5, .5, 1e-3, 1)
+        potential = hydrogenAtom(grid, .5, .5, .5, 1e+3, 1)
         print("Built potential, calculating wave functions")
         waves = computeWaveFunction(potential)
         print("Done computing wave functions, with corresponding energies, please wait for graphical output.")
