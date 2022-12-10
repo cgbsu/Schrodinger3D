@@ -5,16 +5,24 @@ import numpy as np
 from libschrodinger.numerov3d import DimensionIndex
 from libschrodinger.numerov3d import MeshGrid
 
-class Plot3D: 
-    def __init__(self, application, data : np.ndarray):
+class GPUPlot3D: 
+    def __init__(self, application, data : np.ndarray, lower = 0, upper = 10):
+        assert False, "Broken"
         self.application = application
         #self.grid = grid.toArray()
         self.data = data
-        self.dataMax = np.max(np.abs(data)) # USE Min?
-        self.dataMax = self.dataMax if abs(self.dataMax) > 0 else 1
         self.colors = np.empty(data.shape + (4,), dtype=np.ubyte)
-        self.colors[..., 0] = -10 * np.log10(self.data)
-        self.colors[..., 3] = 150
+        self.decibles = -10 * np.log10(self.data)
+        self.max = self.decibles.max()
+        self.min = self.decibles.min() * .75
+        print(self.data)
+        self.colors[..., 0] = self.data % 255 #self.decibles
+        #np.where(
+        #        (self.decibles > self.max) & (self.decibles < self.min), 
+        #        0, 
+        #        self.decibles
+        #    )
+        self.colors[..., 3] = 150#(self.colors[..., 0] * 255) % 255
         self.view = pggl.GLViewWidget()
         self.view.show()
         self.grid = pggl.GLGridItem()

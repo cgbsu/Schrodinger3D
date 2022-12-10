@@ -20,7 +20,7 @@ def main():
         currentEnergy = 0
         application = pg.mkQApp()
         print("HI")
-        plot = Plot3D(application, waves.decibleProbabilities[currentEnergy])
+        plot = Plot3D(application, waves.probabilities[currentEnergy])#waves.decibleProbabilities[currentEnergy])
         application.instance().exec()
 
 
