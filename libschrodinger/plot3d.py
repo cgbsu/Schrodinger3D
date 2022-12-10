@@ -87,7 +87,7 @@ class Plot3D:
         for ii in range(4): 
             if self.properties[ii] == True: 
                 axis.append(self.figure.add_subplot(2, 2, ii + 1, projection="3d"))
-                axis[-1].scatter3D(
+                scatter = axis[-1].scatter3D(
                         self.grid.x, 
                         self.grid.y, 
                         self.grid.z, 
@@ -98,6 +98,7 @@ class Plot3D:
                         antialiased = True
                     )
                 axis[-1].set_title(titles[ii])
+                self.figure.colorbar(scatter)
         plt.show()
     
 # https://matplotlib.org/stable/gallery/event_handling/image_slices_viewer.html
@@ -167,6 +168,8 @@ class IndexTracker:
         self.ims[1].set_data(self.Xs.waveFunctions[self.currentEnergy][:, :, index])
         self.ims[2].set_data(self.Xs.probabilities[self.currentEnergy][:, :, index])
         self.ims[3].set_data(self.Xs.decibleProbabilities[self.currentEnergy][:, :, index])
+        for im in self.ims: 
+            self.figure.colorbar(im)
         self.ax[0].set_ylabel('slice %s' % index)
         print(index)
         for im in self.ims: 
