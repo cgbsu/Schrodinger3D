@@ -25,8 +25,8 @@ def tunnelingCase(
         ) -> np.ndarray: 
     potential_ = np.zeros(grid.x.shape)
     return np.where(
-            (np.abs(centerX - grid.x) < width) \
-                    & (np.abs(centerZ - grid.z) < height), 
+            ~((np.abs(centerX - grid.x) < width) \
+                    & (np.abs(centerZ - grid.z) < height)), 
             potential, 
             potential_
         )
