@@ -1,6 +1,5 @@
 from libschrodinger.numerov3d import *
-import matplotlib
-from matplotlib import cm
+from libschrodinger.plot3d import *
 
 def hydrogenAtom(grid : MeshGrid, centerX, centerY, centerZ, bottom, potential) -> np.ndarray: 
     return potential / np.sqrt(
@@ -11,63 +10,17 @@ def hydrogenAtom(grid : MeshGrid, centerX, centerY, centerZ, bottom, potential) 
         )
 
 def main(): 
-    matplotlib.use('TkAgg')
+    matplotlib.use('QtAgg')
     with cp.cuda.Device(0): 
         pointCount : int = 50
         grid = makeLinspaceGrid(pointCount, 1, 3)
-        potential = hydrogenAtom(grid, .5, .5, .5, 1e-3, 1)
-        figure = plt.figure(0, figsize=(9, 9))
-        potentialAxis = figure.add_subplot(2, 2, 1, projection="3d")
-        potentialAxis.scatter3D(
-                grid.x, 
-                grid.y, 
-                grid.z, 
-                c = potential, 
-                cmap = cm.seismic, 
-                s = 0.001, 
-                alpha = .6, 
-                antialiased = True
-            )
-        potentialAxis.set_title("Potential")
+        potential = 0 * grid.x#hydrogenAtom(grid, .5, .5, .5, 1e-3, 1)
+        print("Built potential, calculating wave functions")
         waves = computeWaveFunction(potential)
-        currentEnergy = 0
-        waveAxis = figure.add_subplot(2, 2, 2, projection="3d")
-        waveAxis.scatter3D(
-                grid.x, 
-                grid.y, 
-                grid.z, 
-                c = waves.waveFunctions[currentEnergy], 
-                cmap = cm.seismic, 
-                s = 0.001, 
-                alpha = .6, 
-                antialiased = True
-            )
-        waveAxis.set_title("Wave Function")
-        probabilityAxis = figure.add_subplot(2, 2, 3, projection="3d")
-        probabilityAxis.scatter3D(
-                grid.x, 
-                grid.y, 
-                grid.z, 
-                c = waves.probabilities[currentEnergy], 
-                cmap = cm.seismic, 
-                s = 0.001, 
-                alpha = .6, 
-                antialiased = True
-            )
-        probabilityAxis.set_title("Probability Distribution")
-        decibleProbabilityAxis = figure.add_subplot(2, 2, 4, projection="3d")
-        decibleProbabilityAxis.scatter3D(
-                grid.x, 
-                grid.y, 
-                grid.z, 
-                c = waves.decibleProbabilities[currentEnergy], 
-                cmap = cm.seismic, 
-                s = 0.001, 
-                alpha = .6, 
-                antialiased = True
-            )
-        decibleProbabilityAxis.set_title("Probability Distribution (Decibles)")
-        print("Done plotting")
+        print("Done computing wave functions, with corresponding energies, please wait for graphical output.")
+        #plot = Plot3D(0, grid, potential, waves)
+        plot = IndexTracker(potential, pointCount, 0, waves)
+        print("Done plotting!")
         plt.show()
 
 
