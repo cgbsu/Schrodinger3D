@@ -11,31 +11,21 @@ from libschrodinger.numerov3d import WaveFunctions
 
 MAXIMUM_32_BITS = 2 ** 32
 
-def normalizeData(data : np.ndarray, threshold = 1e-10): 
+def normalizeData(data : np.ndarray, threshold = 1e-32): 
     maximum = data.max()
-    print("Max: ", maximum)
-    print("Min: ", data.min())
     normalized = data
     if maximum < 0:
         maximum = np.abs(maximum)
         normalized = data + (2 * maximum)
-        print("New max: ", normalized.max())
-        print("New min: ", normalized.max())
     normalized = normalized / maximum
-    print("Normalized Max: ", normalized.max())
     checkMinimum = normalized.min()
-    print("Check Minimum: ", checkMinimum)
     if checkMinimum <= threshold: 
         normalized = normalized / (checkMinimum * maximum)
-        print("Entered threshold ", normalized.max(), " ", normalized.max())
-    print("\nN: ", normalized)
     return normalized
 
 def normalizeTo4x8Bits(normalizedData : np.ndarray) -> np.ndarray: 
     normalizedMinimum = normalizedData.min()
     normalizedMaximum = normalizedData.max()
-    print("Recieved min", normalizedMinimum)
-    print("Recieved max", normalizedMaximum)
     #assert normalizedMaximum <= 1 and normalizedMinimum >= 0 \
     #        "Normalized data must be between 0 and one 1"
     unsigned32 = np.uint32(np.round(normalizedData * MAXIMUM_32_BITS))
@@ -44,6 +34,15 @@ def normalizeTo4x8Bits(normalizedData : np.ndarray) -> np.ndarray:
         output[..., ii] = np.ubyte(unsigned32 >> (ii * 8))
     return output
 
+def normalizeTo4x8BitsStaticAlpha(alpha, normalizedData : np.ndarray) -> np.ndarray: 
+    output = normalizeTo4x8Bits(normalizedData)
+    x = output[..., 0]
+    output[..., 0] = output[..., 1]
+    output[..., 1] = output[..., 2]
+    output[..., 2] = output[..., 3]
+    output[..., 3] = x
+    output[..., 0] = 0
+    return output
 
 class GPUPlot3D: 
     def __init__(self, application, data : np.ndarray, noiseLevel = 1e-16):
@@ -54,7 +53,7 @@ class GPUPlot3D:
                 0, 
                 self.normalizedData
             )
-        self.colors = normalizeTo4x8Bits(self.normalizedData)
+        self.colors = normalizeTo4x8BitsStaticAlpha(150, self.normalizedData)
         self.view = pggl.GLViewWidget()
         self.view.show()
         self.grid = pggl.GLGridItem()
