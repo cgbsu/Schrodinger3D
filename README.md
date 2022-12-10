@@ -5,10 +5,10 @@ Uses the `Numerov` technique of discretizing a second the second derivative of a
 
 ## Tutorials and References: 
 Tutorials and References for configuring the N-dimensional discrete hamiltonian operator can be found at these links: 
-- 1D [https://youtu.be/ay0zZ8SUMSk](Video: Eigenstates of ANY 1D Potential in PYTHON) (Mr. P Solver, YouTube)
-- 1D [https://chem.libretexts.org/Bookshelves/Physical_and_Theoretical_Chemistry_Textbook_Maps/Time_Dependent_Quantum_Mechanics_and_Spectroscopy_(Tokmakoff)/01:_Overview_of_Time-Independent_Quantum_Mechanics/1.05:_Numerically_Solving_the_Schrodinger_Equation](1.5: Numerically Solving the Schrödinger Equation) (Time Dependent Quantum Mechanics and Spectroscopy (Andrei Tokmakoff), Libre Texts)
-- 2D [https://youtu.be/DF1SnjXZcbM](Video: 2D Schrodinger Equation Numerical Solution in PYTHON) (Mr. P Solver, YouTube)
-- 3D [http://dx.doi.org/10.13140/RG.2.2.13878.01602/1](Pre - Print Paper: Solving 3D Time Independent Schrodinger Equation Using Numerical Method) (Wai Kui Wong)
+- 1D [Video: Eigenstates of ANY 1D Potential in PYTHON](https://youtu.be/ay0zZ8SUMSk) (Mr. P Solver, YouTube)
+- 1D [1.5: Numerically Solving the Schrödinger Equation](https://chem.libretexts.org/Bookshelves/Physical_and_Theoretical_Chemistry_Textbook_Maps/Time_Dependent_Quantum_Mechanics_and_Spectroscopy_(Tokmakoff)/01:_Overview_of_Time-Independent_Quantum_Mechanics/1.05:_Numerically_Solving_the_Schrodinger_Equation) (Time Dependent Quantum Mechanics and Spectroscopy (Andrei Tokmakoff), Libre Texts)
+- 2D [Video: 2D Schrodinger Equation Numerical Solution in PYTHON](https://youtu.be/DF1SnjXZcbM) (Mr. P Solver, YouTube)
+- 3D [Pre - Print Paper: Solving 3D Time Independent Schrodinger Equation Using Numerical Method](http://dx.doi.org/10.13140/RG.2.2.13878.01602/1) (Wai Kui Wong)
 - There are an number [Libre Texts](https://libretexts.org/) submissions for how to do this as well, mostly texts relating to quantum chemistry and sometimes more direct physics 
 
 ## Advice: 
