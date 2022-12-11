@@ -33,14 +33,14 @@ def tunnelingCase(
 def stairwell(
             grid, 
             widths : float = [1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0], 
-            heights : float = [1.0 / 3.0, 2.0 / 2.0, 1.0], 
+            heights : float = [1.0 / 3.0, 2.0 / 3.0, 1.0], 
             unitPotential : float = 1.0, 
             unitWidth : float = 1.0
         ) -> np.ndarray: 
-    potential = np.zeros(grid.shape)
+    potential = np.zeros(grid.x.shape)
     length = 0
     for ii in range(len(heights)): 
-        width = width[ii] * unitWidth
+        width = widths[ii] * unitWidth
         height = heights[ii] * unitPotential
         potential = np.where(
                 (grid.x >= length) & (grid.x <= (length + width)), 
@@ -48,6 +48,7 @@ def stairwell(
                 potential
             )
         length += width
+    print(potential)
     return potential
 
 

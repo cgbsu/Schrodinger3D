@@ -8,7 +8,7 @@ def main():
     with cp.cuda.Device(0): 
         pointCount : int = 50
         grid = makeLinspaceGrid(pointCount, 1, 3)
-        potential = tunnelingCase(grid, .6, .1, 1e3)
+        potential = stairwell(grid)
         print("Built potential, calculating wave functions")
         waves = computeWaveFunction(potential, energyCount = 20) 
         print("Done computing wave functions, with corresponding energies, please wait for graphical output.")
