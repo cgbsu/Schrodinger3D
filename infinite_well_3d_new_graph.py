@@ -3,22 +3,12 @@ from libschrodinger.plot3d import *
 import matplotlib
 import pyqtgraph as pg
 
-def hydrogenAtom(grid : MeshGrid, centerX, centerY, centerZ, bottom, potential) -> np.ndarray: 
-    return potential / np.sqrt(
-            (grid.x - centerX) ** 2 \
-            + (grid.y - centerY) ** 2 \
-            + (grid.z - centerZ) ** 2 \
-            + bottom ** 2 \
-        )
-
 def main(): 
     with cp.cuda.Device(0): 
         pointCount : int = 50
         grid = makeLinspaceGrid(pointCount, 1, 3)
-        potential = 0 * grid.x#hydrogenAtom(grid, .5, .5, .5, 1e-3, 1)
-        #, eigenValueType = EigenValueTypes.SMALLEST_MAGNITUDE)#,
-        waves = computeWaveFunction(potential, energyCount = 20) 
-        #gpuAccelerated = False)
+        potential = 0 * grid.x
+        waves = computeWaveFunction(potential, energyCount = 100) 
         currentEnergy = 0
         application = pg.mkQApp()
         plots = GPUAcclerated3DPlotApplication(application, potential, waves)

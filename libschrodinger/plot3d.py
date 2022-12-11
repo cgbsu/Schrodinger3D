@@ -2,6 +2,7 @@ import sys
 import pyqtgraph as pg
 import pyqtgraph.opengl as pggl
 from pyqtgraph.Qt import QtCore, QtGui
+from PyQt6.QtCore import Qt
 from PyQt6 import QtWidgets
 import numpy as np
 import matplotlib
@@ -10,6 +11,29 @@ from matplotlib import cm
 from libschrodinger.numerov3d import DimensionIndex
 from libschrodinger.numerov3d import MeshGrid
 from libschrodinger.numerov3d import WaveFunctions
+from matplotlib.colors import hsv_to_rgb
+
+# This function borrwed from https://github.com/quantum-visualizations/qmsolve/blob/main/qmsolve/util/colour_functions.py
+def complex_to_rgb(Z):
+    """Convert complex values to their rgb equivalent.
+    Parameters
+    ----------
+    Z : array_like
+        The complex values.
+    Returns
+    -------
+    array_like
+        The rgb values.
+    """
+    #using HSV space
+    r = np.abs(Z)
+    arg = np.angle(Z)
+    
+    h = (arg + np.pi)  / (2 * np.pi)
+    s = np.ones(h.shape)
+    v = r  / np.amax(r)  #alpha
+    c = hsv_to_rgb(np.moveaxis(np.array([h,s,v]) , 0, -1)) # --> tuple
+    return c
 
 MAXIMUM_32_BITS = 2 ** 32
 MAXIMUM_24_BITS = 2 ** 24
@@ -92,11 +116,19 @@ def normalizeTo4x8BitsStaticAlpha(alpha, normalizedData : np.ndarray) -> np.ndar
 
 
 class GPUPlot3D: 
-    def __init__(self, application, data : np.ndarray, noiseLevel = FLOAT_32_EPSILON, alpha = 50, position = None):
+    def __init__(self, 
+                 application, 
+                 data : np.ndarray, 
+                 noiseLevel = FLOAT_32_EPSILON, 
+                 alpha = 50, 
+                 position = None, 
+                 bit24NormalizationNorHSVToRGB = True
+            ):
         self.application = application
         self.view = pggl.GLViewWidget()
         self.grid = pggl.GLGridItem()
         self.plot = None
+        self.bit24NormalizationNorHSVToRGB = bit24NormalizationNorHSVToRGB 
         self.newVolumePlot(data, noiseLevel, alpha)
         self.axis = pggl.GLAxisItem()
         #self.axisY = pggl.GLAxisItem()
@@ -113,21 +145,31 @@ class GPUPlot3D:
         self.position = position - self.centeredCoordinates \
                 if position else self.centeredCoordinates
         self.grid.translate(*tuple(self.position))
-        #self.view.show()
         self.view.pan(*self.centeredCoordinates)
         self.view.opts["distance"] = 3 * self.pointCount
-        #self.view.resize(800, 600)
+
+    def updateAlpha(self, alpha): 
+        self.colors[..., 3] = alpha
+
     def newVolumePlot(self, data, noiseLevel = FLOAT_32_EPSILON, alpha = 50): 
         if self.plot: 
             self.view.removeItem(self.plot)
-        self.normalizedData = normalizeData(data, noiseLevel) 
+        self.normalizedData = normalizeData(data, noiseLevel)
         self.normalizedData = np.where(
                 self.normalizedData < noiseLevel, 
                 0, 
                 self.normalizedData
             )
         self.pointCount = data.shape[0] 
-        self.colors = normalizeTo4x8BitScaledColor(self.normalizedData, alpha)
+        fromColors = complex_to_rgb(self.normalizedData) * 255
+        if self.bit24NormalizationNorHSVToRGB == True: 
+            self.colors = normalizeTo4x8BitScaledColor(self.normalizedData, alpha)
+        else: 
+            self.colors = np.zeros(self.normalizedData.shape + (4, ))
+            self.colors[..., 0] = fromColors[..., 0]
+            self.colors[..., 1] = fromColors[..., 1]
+            self.colors[..., 2] = fromColors[..., 2]
+            self.colors[..., 3] = alpha
         self.plot = pggl.GLVolumeItem(self.colors)
         self.view.addItem(self.plot)
 
@@ -144,7 +186,10 @@ class GPUAcclerated3DPlotApplication:
         self.potential = potential
         self.mainWidget = QtWidgets.QWidget()
         self.layout = QtWidgets.QGridLayout()
+        self.verticalContainer = QtWidgets.QWidget()
+        self.verticalLayout = QtWidgets.QVBoxLayout()
         self.mainWidget.setLayout(self.layout)
+        self.verticalContainer.setLayout(self.verticalLayout)
         self.currentEnergyIndex = currentEnergyIndex
         self.plotPotential = GPUPlot3D(self.application, self.potential)
         self.plotWaveFunction = GPUPlot3D(self.application, self.waves.waveFunctions[currentEnergyIndex])
@@ -176,10 +221,41 @@ class GPUAcclerated3DPlotApplication:
         self.previousEnergyButton = QtWidgets.QPushButton("Previous")
         self.nextEnergyButton.clicked.connect(self.nextEnergy)
         self.previousEnergyButton.clicked.connect(self.previousEnergy)
+        self.allPlots = [
+                self.plotPotential, 
+                self.plotWaveFunction, 
+                self.plotProbabilities, 
+                self.plotDecibleProbabilities 
+            ]
         self.layout.addWidget(self.nextEnergyButton, 5, 2)
         self.layout.addWidget(self.previousEnergyButton, 5, 1)
-        self.mainWidget.show()
-        self.mainWidget.resize(1200, 800)
+        self.verticalLayout.addWidget(self.mainWidget)
+        self.alphaSlider = QtWidgets.QSlider()
+        self.alphaSlider.setMaximum(255)
+        self.alphaSlider.setMinimum(0)
+        self.alphaSlider.setSingleStep(1)
+        self.alpha = 50
+        self.alphaSlider.setValue(self.alpha)
+        self.alphaSlider.valueChanged.connect(self.updateAlpha)
+        self.alphaSlider.setOrientation(Qt.Orientation.Horizontal)
+        self.alphaLabel = QtWidgets.QLabel("Alpha " + str(self.alpha))
+        self.alphaLabel.setFixedHeight(10)
+        self.verticalLayout.addWidget(self.alphaSlider)
+        self.verticalLayout.addWidget(self.alphaLabel)
+        self.noiseSlider = QtWidgets.QSlider()
+        self.noiseSlider.setMaximum(50)
+        self.noiseSlider.setMinimum(0)
+        self.noiseSlider.setSingleStep(1)
+        self.noisePower = 16
+        self.noiseSlider.setValue(self.noisePower)
+        self.noiseSlider.valueChanged.connect(self.updateNoise)
+        self.noiseSlider.setOrientation(Qt.Orientation.Horizontal)
+        self.noiseLabel = QtWidgets.QLabel("Noise 10^(-" + str(self.noisePower) + ")")
+        self.noiseLabel.setFixedHeight(10)
+        self.verticalLayout.addWidget(self.noiseSlider)
+        self.verticalLayout.addWidget(self.noiseLabel)
+        self.verticalContainer.show()
+        self.verticalContainer.resize(1200, 800)
 
     def setLabels(self): 
         self.energyIndexLabel.setText(
@@ -190,6 +266,16 @@ class GPUAcclerated3DPlotApplication:
                 "Current Energy: " \
                 + "{:<15}".format(self.waves.energyValues[self.currentEnergyIndex])
             )
+
+    def updateNoise(self, noise):
+        self.noisePower = noise
+        self.noiseLabel.setText("Noise 10^(-" + str(self.noisePower) + ")")
+
+    def updateAlpha(self, alpha):
+        self.alpha = alpha
+        self.alphaLabel.setText("Alpha " + str(self.alpha))
+        for plot in self.allPlots: 
+            plot.updateAlpha(self.alpha)
 
     def nextEnergy(self): 
         self.setLabels()
@@ -204,9 +290,10 @@ class GPUAcclerated3DPlotApplication:
 
     def plotWaves(self, currentEnergyIndex): 
         self.currentEnergyIndex = currentEnergyIndex
-        self.plotWaveFunction.newVolumePlot(self.waves.waveFunctions[currentEnergyIndex])
-        self.plotProbabilities.newVolumePlot(self.waves.probabilities[currentEnergyIndex])
-        self.plotDecibleProbabilities.newVolumePlot(self.waves.decibleProbabilities[currentEnergyIndex])
+        noise = 10 ** (-self.noisePower)
+        self.plotWaveFunction.newVolumePlot(self.waves.waveFunctions[currentEnergyIndex], noise, self.alpha)
+        self.plotProbabilities.newVolumePlot(self.waves.probabilities[currentEnergyIndex], noise, self.alpha)
+        self.plotDecibleProbabilities.newVolumePlot(self.waves.decibleProbabilities[currentEnergyIndex], noise, self.alpha)
 
 class Plot3D: 
     def __init__(

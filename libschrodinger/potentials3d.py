@@ -2,11 +2,11 @@ import numpy as np
 
 def hydrogenAtom(
             grid, 
-            centerX : float, 
-            centerY : float, 
-            centerZ : float, 
-            bottom : float, 
-            potential : float
+            centerX : float = .5, 
+            centerY : float = .5, 
+            centerZ : float = .5, 
+            bottom : float = 1, 
+            potential : float = 1
         ) -> np.ndarray: 
     return potential / np.sqrt(
             (grid.x - centerX) ** 2 \
