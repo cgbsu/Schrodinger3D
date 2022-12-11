@@ -1,4 +1,20 @@
 import numpy as np
+from dataclasses import dataclass
+
+@dataclass
+class Stairwell: 
+    heights : list[float] 
+    widths : list[float] 
+    unitPotential : float
+    unitWidth : float
+
+UNIFORM_STAIRWELL = Stairwell(
+        [1.0 / 3.0, 2.0 / 3.0, 1.0], 
+        [1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0], 
+        1.0, 
+        1.0
+    )
+
 
 def hydrogenAtom(
             grid, 
@@ -30,10 +46,10 @@ def tunnelingCase(
             potential, 
         )
 
-def stairwell(
+def constantPotentialRegions(
             grid, 
-            widths : float = [1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0], 
-            heights : float = [1.0 / 3.0, 2.0 / 3.0, 1.0], 
+            widths : float, 
+            heights : float,  
             unitPotential : float = 1.0, 
             unitWidth : float = 1.0
         ) -> np.ndarray: 
@@ -42,13 +58,21 @@ def stairwell(
     for ii in range(len(heights)): 
         width = widths[ii] * unitWidth
         height = heights[ii] * unitPotential
+        print(height)
         potential = np.where(
                 (grid.x >= length) & (grid.x <= (length + width)), 
                 height, 
                 potential
             )
         length += width
-    print(potential)
     return potential
 
+def stairwell(grid, configuration : Stairwell = UNIFORM_STAIRWELL) -> np.ndarray: 
+    return constantPotentialRegions(
+            grid, 
+            configuration.widths, 
+            configuration.heights, 
+            configuration.unitPotential, 
+            configuration.unitWidth
+        )
 
