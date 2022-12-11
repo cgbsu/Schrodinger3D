@@ -2,6 +2,7 @@ import sys
 import pyqtgraph as pg
 import pyqtgraph.opengl as pggl
 from pyqtgraph.Qt import QtCore, QtGui
+from PyQt6 import QtWidgets
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -23,6 +24,12 @@ def normalizeData(data : np.ndarray, threshold = FLOAT_32_EPSILON, divideOut = F
     if maximum < 0:
         maximum = np.abs(maximum)
         normalized = data + (2 * maximum)
+    if maximum == 0:
+        minimum = data.min()
+        if minimum != 0: 
+            maximum = np.abs(minimum)
+        else: 
+            return normalized
     normalized = normalized / maximum
     if divideOut == True: 
         checkMinimum = normalized.min()
@@ -87,22 +94,14 @@ def normalizeTo4x8BitsStaticAlpha(alpha, normalizedData : np.ndarray) -> np.ndar
 class GPUPlot3D: 
     def __init__(self, application, data : np.ndarray, noiseLevel = FLOAT_32_EPSILON, alpha = 50, position = None):
         self.application = application
-        self.normalizedData = normalizeData(data, noiseLevel) 
-        self.normalizedData = np.where(
-                self.normalizedData < noiseLevel, 
-                0, 
-                self.normalizedData
-            )
-        self.pointCount = data.shape[0] 
-        self.colors = normalizeTo4x8BitScaledColor(self.normalizedData, alpha)
         self.view = pggl.GLViewWidget()
         self.grid = pggl.GLGridItem()
-        self.plot = pggl.GLVolumeItem(self.colors)
+        self.plot = None
+        self.newVolumePlot(data, noiseLevel, alpha)
         self.axis = pggl.GLAxisItem()
         #self.axisY = pggl.GLAxisItem()
         #self.axisZ = pggl.GLAxisItem()
         self.view.addItem(self.grid)
-        self.view.addItem(self.plot)
         self.view.addItem(self.axis)
         #self.view.addItem(self.axisY)
         #self.view.addItem(self.axisZ)
@@ -114,9 +113,100 @@ class GPUPlot3D:
         self.position = position - self.centeredCoordinates \
                 if position else self.centeredCoordinates
         self.grid.translate(*tuple(self.position))
-        self.view.show()
+        #self.view.show()
+        self.view.pan(*self.centeredCoordinates)
+        self.view.opts["distance"] = 3 * self.pointCount
+        #self.view.resize(800, 600)
+    def newVolumePlot(self, data, noiseLevel = FLOAT_32_EPSILON, alpha = 50): 
+        if self.plot: 
+            self.view.removeItem(self.plot)
+        self.normalizedData = normalizeData(data, noiseLevel) 
+        self.normalizedData = np.where(
+                self.normalizedData < noiseLevel, 
+                0, 
+                self.normalizedData
+            )
+        self.pointCount = data.shape[0] 
+        self.colors = normalizeTo4x8BitScaledColor(self.normalizedData, alpha)
+        self.plot = pggl.GLVolumeItem(self.colors)
+        self.view.addItem(self.plot)
 
 
+class GPUAcclerated3DPlotApplication: 
+    Q_LABEL_STYLE_SHEET = ""
+    "background-color: #262626;"
+    "color: #FFFFFF;"
+    "font-family: Titillium;"
+    "font-size: 18px;"
+    def __init__(self, application, potential, waves, currentEnergyIndex = 0): 
+        self.application = application
+        self.waves = waves
+        self.potential = potential
+        self.mainWidget = QtWidgets.QWidget()
+        self.layout = QtWidgets.QGridLayout()
+        self.mainWidget.setLayout(self.layout)
+        self.currentEnergyIndex = currentEnergyIndex
+        self.plotPotential = GPUPlot3D(self.application, self.potential)
+        self.plotWaveFunction = GPUPlot3D(self.application, self.waves.waveFunctions[currentEnergyIndex])
+        self.plotProbabilities = GPUPlot3D(self.application, self.waves.probabilities[currentEnergyIndex])
+        self.plotDecibleProbabilities = GPUPlot3D(self.application, self.waves.decibleProbabilities[currentEnergyIndex])
+        self.energyIndexLabel = QtWidgets.QLabel("Temp")
+        self.energyIndexLabel.setFixedHeight(10)
+        self.energyValueLabel = QtWidgets.QLabel("Temp")
+        self.energyValueLabel.setFixedHeight(10)
+        self.layout.addWidget(self.energyIndexLabel, 0, 1)
+        self.layout.addWidget(self.energyValueLabel, 0, 2)
+        self.setLabels()
+        self.plotLabels = [
+                [QtWidgets.QLabel("Probabilities "), QtWidgets.QLabel("Wave Function")], 
+                [QtWidgets.QLabel("Potential"), QtWidgets.QLabel("Decible Probabilities")]
+            ]
+        for row in self.plotLabels: 
+            for label in row: 
+                label.setFixedHeight(10)
+        self.layout.addWidget(self.plotLabels[0][0], 1, 1)
+        self.layout.addWidget(self.plotProbabilities.view, 2, 1)
+        self.layout.addWidget(self.plotLabels[0][1], 1, 2)
+        self.layout.addWidget(self.plotWaveFunction.view, 2, 2)
+        self.layout.addWidget(self.plotLabels[1][0], 3, 1)
+        self.layout.addWidget(self.plotPotential.view, 4, 1)
+        self.layout.addWidget(self.plotLabels[1][1], 3, 2)
+        self.layout.addWidget(self.plotDecibleProbabilities.view, 4, 2)
+        self.nextEnergyButton = QtWidgets.QPushButton("Next")
+        self.previousEnergyButton = QtWidgets.QPushButton("Previous")
+        self.nextEnergyButton.clicked.connect(self.nextEnergy)
+        self.previousEnergyButton.clicked.connect(self.previousEnergy)
+        self.layout.addWidget(self.nextEnergyButton, 5, 2)
+        self.layout.addWidget(self.previousEnergyButton, 5, 1)
+        self.mainWidget.show()
+        self.mainWidget.resize(1200, 800)
+
+    def setLabels(self): 
+        self.energyIndexLabel.setText(
+                "Current Energy Index: " \
+                + str(self.currentEnergyIndex) \
+            )
+        self.energyValueLabel.setText(
+                "Current Energy: " \
+                + "{:<15}".format(self.waves.energyValues[self.currentEnergyIndex])
+            )
+
+    def nextEnergy(self): 
+        self.setLabels()
+        self.plotWaves(self.currentEnergyIndex + 1 \
+                if self.currentEnergyIndex < (len(self.waves.waveFunctions) - 1) \
+                else self.currentEnergyIndex
+            )
+
+    def previousEnergy(self): 
+        self.setLabels()
+        self.plotWaves(self.currentEnergyIndex - 1 if self.currentEnergyIndex > 0 else 0)
+
+    def plotWaves(self, currentEnergyIndex): 
+        self.currentEnergyIndex = currentEnergyIndex
+        self.plotWaveFunction.newVolumePlot(self.waves.waveFunctions[currentEnergyIndex])
+        self.plotProbabilities.newVolumePlot(self.waves.probabilities[currentEnergyIndex])
+        self.plotDecibleProbabilities.newVolumePlot(self.waves.decibleProbabilities[currentEnergyIndex])
 
 class Plot3D: 
     def __init__(

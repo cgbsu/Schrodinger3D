@@ -18,7 +18,7 @@ def main():
         print("Built potential, calculating wave functions")
         waves = computeWaveFunction(potential)
         print("Done computing wave functions, with corresponding energies, please wait for graphical output.")
-        plot = Plot3D(0, grid, potential, waves)
+        plot = Plot3D(0, grid, potential, waves, pointSize = 1 / pointCount)
         #plot = IndexTracker(potential, pointCount, 0, waves)
         print("Done plotting!")
         #plt.show()

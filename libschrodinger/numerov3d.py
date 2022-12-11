@@ -6,8 +6,10 @@ import cupy as cp
 import matplotlib.pyplot as plt
 from scipy.linalg import eigh_tridiagonal
 #from scipy import sparse
-# from scipy.sparse.linalg import eigsh
-from cupyx.scipy.sparse.linalg import eigsh
+#import scipy.sparse.linalg as scipylin
+from scipy.sparse.linalg import eigsh
+import cupyx.scipy.sparse.linalg as cplin
+
 from cupyx.scipy import sparse
 
 class EigenValueTypes(Enum):
@@ -102,7 +104,9 @@ def makeHamiltonian(
 def computeWaveFunction(
             potential : np.ndarray, 
             energyCount : int = 10, 
-            eigenValueType : EigenValueTypes = EigenValueTypes.LARGEST_MAGNITUDE # EigenValueTypes.SMALLEST_MAGNITUDE
+            eigenValueType : EigenValueTypes = EigenValueTypes.LARGEST_MAGNITUDE, # EigenValueTypes.SMALLEST_MAGNITUDE
+            #center = 0, 
+            #gpuAccelerated = True
         ) -> WaveFunctions: 
     dimensions : int = len(potential.shape)
     pointCount : int = potential.shape[0]
@@ -110,9 +114,19 @@ def computeWaveFunction(
         assert cardinality == pointCount, "All dimensions of potential need to have the same number of elements"
     mappingMatrix, _ = makeMappingMatrix(pointCount, dimensions)
     hamiltonian = makeHamiltonian(potential, pointCount, dimensions, mappingMatrix)
-    return WaveFunctions(potential.shape, *eigsh(
+    
+    #if gpuAccelerated == False: 
+    eigenStates = cplin.eigsh( 
             hamiltonian, 
             k = energyCount, 
-            which = eigenValueType.value
-        ))
+            which = eigenValueType.value, 
+            #sigma = sigma
+        )
+    #else: 
+    #    eigenStates = cupylin.eigsh(
+    #            hamiltonian, 
+    #            k = energyCount, 
+    #            which = eigenValueType.value, 
+    #        )
+    return WaveFunctions(potential.shape, *eigenStates)
 
