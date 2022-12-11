@@ -18,16 +18,36 @@ def hydrogenAtom(
 def tunnelingCase(
             grid, 
             centerX : float, 
-            centerZ : float, 
             width : float, 
-            height : float, 
             potential : float, 
+            length : float = 1.0
         ) -> np.ndarray: 
-    potential_ = np.zeros(grid.x.shape)
+    centerX *= length
+    width *= length
     return np.where(
-            ~((np.abs(centerX - grid.x) < width) \
-                    & (np.abs(centerZ - grid.z) < height)), 
+            (grid.x <= (centerX + width)) & (grid.x >= centerX), 
+            0, 
             potential, 
-            potential_
         )
+
+def stairwell(
+            grid, 
+            widths : float = [1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0], 
+            heights : float = [1.0 / 3.0, 2.0 / 2.0, 1.0], 
+            unitPotential : float = 1.0, 
+            unitWidth : float = 1.0
+        ) -> np.ndarray: 
+    potential = np.zeros(grid.shape)
+    length = 0
+    for ii in range(len(heights)): 
+        width = width[ii] * unitWidth
+        height = heights[ii] * unitPotential
+        potential = np.where(
+                (grid.x >= length) & (grid.x <= (length + width)), 
+                height, 
+                potential
+            )
+        length += width
+    return potential
+
 

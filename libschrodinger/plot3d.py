@@ -31,7 +31,11 @@ def complex_to_rgb(Z):
     
     h = (arg + np.pi)  / (2 * np.pi)
     s = np.ones(h.shape)
-    v = r  / np.amax(r)  #alpha
+    rMax = np.max(r)
+    if rMax != 0:
+        v = r  / np.amax(r)  #alpha
+    else: 
+        v = r
     c = hsv_to_rgb(np.moveaxis(np.array([h,s,v]) , 0, -1)) # --> tuple
     return c
 
@@ -293,7 +297,9 @@ class GPUAcclerated3DPlotApplication:
         noise = 10 ** (-self.noisePower)
         self.plotWaveFunction.newVolumePlot(self.waves.waveFunctions[currentEnergyIndex], noise, self.alpha)
         self.plotProbabilities.newVolumePlot(self.waves.probabilities[currentEnergyIndex], noise, self.alpha)
-        self.plotDecibleProbabilities.newVolumePlot(self.waves.decibleProbabilities[currentEnergyIndex], noise, self.alpha)
+        decibles = self.waves.decibleProbabilities[currentEnergyIndex]
+        #decibles = np.where(decibles < -100, decibles, 0)
+        self.plotDecibleProbabilities.newVolumePlot(decibles, noise, self.alpha)
 
 class Plot3D: 
     def __init__(
