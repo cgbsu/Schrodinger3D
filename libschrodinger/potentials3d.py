@@ -40,11 +40,12 @@ def tunnelingCase(
         ) -> np.ndarray: 
     centerX *= length
     width *= length
-    return np.where(
+    V = np.where(
             (grid.x <= (centerX + width)) & (grid.x >= centerX), 
-            0, 
             potential, 
+            0, 
         )
+    return V
 
 def constantPotentialRegions(
             grid, 

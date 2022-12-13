@@ -151,6 +151,7 @@ class GPUPlot3D:
         self.grid.translate(*tuple(self.position))
         self.view.pan(*self.centeredCoordinates)
         self.view.opts["distance"] = 3 * self.pointCount
+        self.view.setBackgroundColor(pg.mkColor(0, 255, 0))
 
     def updateAlpha(self, alpha): 
         self.colors[..., 3] = alpha
@@ -165,15 +166,15 @@ class GPUPlot3D:
                 self.normalizedData
             )
         self.pointCount = data.shape[0] 
-        fromColors = complex_to_rgb(self.normalizedData) * 255
         if self.bit24NormalizationNorHSVToRGB == True: 
-            self.colors = normalizeTo4x8BitScaledColor(self.normalizedData, alpha)
-        else: 
+            fromColors = complex_to_rgb(self.normalizedData) * 255
             self.colors = np.zeros(self.normalizedData.shape + (4, ))
             self.colors[..., 0] = fromColors[..., 0]
             self.colors[..., 1] = fromColors[..., 1]
             self.colors[..., 2] = fromColors[..., 2]
-            self.colors[..., 3] = alpha
+            self.colors[..., 3] = np.round(self.normalizedData * 255) #alpha
+        else:
+            self.colors = normalizeTo4x8BitScaledColor(self.normalizedData, alpha)
         self.plot = pggl.GLVolumeItem(self.colors)
         self.view.addItem(self.plot)
 
@@ -195,10 +196,10 @@ class GPUAcclerated3DPlotApplication:
         self.mainWidget.setLayout(self.layout)
         self.verticalContainer.setLayout(self.verticalLayout)
         self.currentEnergyIndex = currentEnergyIndex
-        self.plotPotential = GPUPlot3D(self.application, self.potential)
-        self.plotWaveFunction = GPUPlot3D(self.application, self.waves.waveFunctions[currentEnergyIndex])
-        self.plotProbabilities = GPUPlot3D(self.application, self.waves.probabilities[currentEnergyIndex])
-        self.plotDecibleProbabilities = GPUPlot3D(self.application, self.waves.decibleProbabilities[currentEnergyIndex])
+        self.plotPotential = GPUPlot3D(self.application, self.potential, bit24NormalizationNorHSVToRGB = True)
+        self.plotWaveFunction = GPUPlot3D(self.application, self.waves.waveFunctions[currentEnergyIndex], bit24NormalizationNorHSVToRGB = True)
+        self.plotProbabilities = GPUPlot3D(self.application, self.waves.probabilities[currentEnergyIndex], bit24NormalizationNorHSVToRGB = True)
+        self.plotDecibleProbabilities = GPUPlot3D(self.application, self.waves.decibleProbabilities[currentEnergyIndex], bit24NormalizationNorHSVToRGB = True)
         self.energyIndexLabel = QtWidgets.QLabel("Temp")
         self.energyIndexLabel.setFixedHeight(10)
         self.energyValueLabel = QtWidgets.QLabel("Temp")

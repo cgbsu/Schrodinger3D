@@ -67,7 +67,8 @@ class MeshGrid:
         return self.asArray
 
 def makeLinspaceGrid(pointCount : int, length : float, dimensions : int, componentType : type = float) -> MeshGrid: 
-    spaces : tuple[np.array] = tuple((np.linspace(0, length, pointCount, dtype = componentType) for ii in range(dimensions)))
+    #spaces : tuple[np.array] = tuple((np.linspace(-length / 2, length  / 2, pointCount, dtype = componentType) for ii in range(dimensions)))
+    spaces : tuple[np.array] = tuple((np.linspace(-length, length, pointCount, dtype = componentType) for ii in range(dimensions)))
     return MeshGrid(np.meshgrid(*spaces), pointCount, length)
 
 def makeMappingMatrix(pointCount : int, dimensions : int) -> np.ndarray:

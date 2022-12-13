@@ -8,7 +8,7 @@ def main():
     with cp.cuda.Device(0): 
         pointCount : int = 50
         grid = makeLinspaceGrid(pointCount, 1, 3)
-        potential = hydrogenAtom(grid, potential = 1e10)
+        potential = hydrogenAtom(grid, potential = 1)
         waves = computeWaveFunction(potential, energyCount = 20) 
         currentEnergy = 0
         application = pg.mkQApp()
