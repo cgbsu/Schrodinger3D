@@ -66,25 +66,31 @@
 # The licensed work is offered on an as-is basis without any warranty or liability. You may choose to offer warranty or liability for your derivative work, but only fully on your own responsibility.
 #
 
+
 from libschrodinger.numerov3d import *
 from libschrodinger.plot3d import *
-from libschrodinger.potentials3d import *
 import matplotlib
 import pyqtgraph as pg
 
-def main(): 
-    pointCount : int = 15
-    grid = makeLinspaceGrid(pointCount, 1, 3)
-    potential = hydrogenAtom(grid, potential = .05)
-    waves = computeWaveFunction(
-            potential, 
-            energyCount = 20, 
-            gpuAccelerated = False, 
-            eigenValueType = EigenValueTypes.SMALLEST_MAGNITUDE
+def hydrogenAtom(grid : MeshGrid, centerX, centerY, centerZ, bottom, potential) -> np.ndarray: 
+    return potential / np.sqrt(
+            (grid.x - centerX) ** 2 \
+            + (grid.y - centerY) ** 2 \
+            + (grid.z - centerZ) ** 2 \
+            + bottom ** 2 \
         )
+
+def main(): 
+    pointCount : int = 50
+    grid = makeLinspaceGrid(pointCount, 1, 3)
+    potential = 0 * grid.x#hydrogenAtom(grid, .5, .5, .5, 1e-3, 1)
+    waves = computeWaveFunction(potential)
     currentEnergy = 0
     application = pg.mkQApp()
-    plots = GPUAcclerated3DPlotApplication(application, potential, waves)
+    plotPotential = GPUPlot3D(application, potential)
+    plotWaveFunction = GPUPlot3D(application, waves.waveFunctions[currentEnergy])
+    plotProbabilities = GPUPlot3D(application, waves.probabilities[currentEnergy])
+    plotDecibleProbabilities = GPUPlot3D(application, waves.decibleProbabilities[currentEnergy])
     application.instance().exec()
 
 
