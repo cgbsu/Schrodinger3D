@@ -73,21 +73,13 @@ from libschrodinger.potentials3d import *
 import matplotlib
 import pyqtgraph as pg
 
-
-HIGH_TOP_STAIRWELL = Stairwell(
-        [1.0 / 6.0, 2.0 / 6.0, 1.0], 
-        [1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0], 
-        .1, 
-        1.0
-    )
-
 def main(): 
     with cp.cuda.Device(0): 
-        pointCount : int = 15
+        pointCount : int = 25
         grid = makeLinspaceGrid(pointCount, 1, 3)
-        potential = stairwell(grid, HIGH_TOP_STAIRWELL)
+        potential = 0 * grid.x
         print("Built potential, calculating wave functions")
-        waves = computeWaveFunction(potential, energyCount = 20, gpuAccelerated = False, eigenValueType = EigenValueTypes.SMALLEST_MAGNITUDE) 
+        waves = computeWaveFunction(potential, energyCount = 1, A= True) 
         print("Done computing wave functions, with corresponding energies, please wait for graphical output.")
         currentEnergy = 0
         application = pg.mkQApp()
