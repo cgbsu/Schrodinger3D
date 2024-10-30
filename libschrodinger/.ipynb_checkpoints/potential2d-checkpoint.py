@@ -135,98 +135,93 @@
 # The licensed work is offered on an as-is basis without any warranty or liability. You may choose to offer warranty or liability for your derivative work, but only fully on your own responsibility.
 #
 
+
 import numpy as np
-from dataclasses import dataclass
 
-@dataclass
-class Stairwell: 
-    heights : list[float] 
-    widths : list[float] 
-    unitPotential : float
-    unitWidth : float
+def gaussian(
+            positions : np.ndarray, 
+            offset : float, 
+            variance : float
+        ) -> np.ndarray: 
+    exponent = (-1.0 / 2.0) * ((positions - offset) ** 2) / (2.0 * variance ** 2)
+    scalar = 1.0 / (np.sqrt(2.0 * np.pi) * variance)
+    return scalar * np.exp(exponent)
+    
 
-UNIFORM_STAIRWELL = Stairwell(
-        [1.0 / 3.0, 2.0 / 3.0, 1.0], 
-        [1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0], 
-        .1, 
-        1.0
-    )
-
+def gaussian2d(
+            grid, 
+            xOffset : float, 
+            yOffset : float, 
+            variance : float
+        ) -> np.ndarray: 
+    return gaussian(grid.x, xOffset, variance) * gaussian(grid.x, yOffset, variance)
 
 def hydrogenAtom(
             grid, 
-            centerX : float = .5, 
-            centerY : float = .5, 
-            centerZ : float = .5, 
-            bottom : float = 1, 
-            potential : float = .05
+            centerX : float, 
+            centerY : float, 
+            bottom : float
         ) -> np.ndarray: 
-    return -potential / np.sqrt(
-            grid.x ** 2 \
-            + grid.y ** 2 \
-            + grid.z ** 2 \
-            + bottom ** 2 \
-        )
-    #return -potential / np.sqrt(
-    #        (grid.x - centerX) ** 2 \
-    #        + (grid.y - ceterY) ** 2 \
-    #        + (grid.z - centerZ) ** 2 \
-    #        + bottom ** 2 \
-    #    )
+    distance = 1 / (np.sqrt(((xPosition - centerX) ** 2) + ((yPosition - centerY) ** 2)) + bottom)
+    return distance
 
 def tunnelingCase(
             grid, 
-            centerX : float, 
-            width : float, 
-            potential : float = .1, 
-            length : float = 1.0
+            barrierPosition : float, 
+            barrierWidth : float, 
+            potentialHeight : float
         ) -> np.ndarray: 
-    centerX *= length
-    width *= length
-    V = np.where(
-            (grid.x <= (centerX + width)) & (grid.x >= centerX), 
-            potential, 
-            0
+    potentials = np.zeros(xPositions.shape)
+    return np.where(
+            (grid.x <= (barrierPosition + barrierWidth)) \
+                    & (grid.x >= (barrierPosition - barrierWidth)), 
+            potentialHeight, 
+            potentials
         )
-    return V
 
-def constantPotentialRegions(
+def finiteSquareWell(
             grid, 
-            widths : float, 
-            heights : float,  
-            unitPotential : float = 1.0, 
-            unitWidth : float = 1.0
+            potentialHeight : float, 
+            width : float, 
+            height : float
         ) -> np.ndarray: 
-    potential = np.zeros(grid.x.shape)
-    length = 0
-    for ii in range(len(heights)): 
-        width = widths[ii] * unitWidth
-        height = heights[ii] * unitPotential
-        print(height)
-        potential = np.where(
-                (grid.x >= length) & (grid.x <= (length + width)), 
-                height, 
-                potential
-            )
-        length += width
+    potential : np.ndarray = np.zeros(xPositions.shape)
+    potential = np.where((grid.x <= width) | (grid.x >= (1 - width)), potentialHeight, potential)
+    potential = np.where((grid.y <= height) | (grid.y >= (1 - height)), potentialHeight, potential)
     return potential
 
-def stairwell(grid, configuration : Stairwell = UNIFORM_STAIRWELL) -> np.ndarray: 
-    return constantPotentialRegions(
+def finiteCircularWell(
             grid, 
-            configuration.widths, 
-            configuration.heights, 
-            configuration.unitPotential, 
-            configuration.unitWidth
-        )
+            potentialHeight : float, 
+            radius : float, 
+            centerX : float = .5, 
+            centerY : float = .5
+        ) -> np.ndarray: 
+    distances : float = np.sqrt(((grid.x - centerX) ** 2) + ((grid.y - centerY) ** 2))
+    potential : np.ndarray = np.zeros(grid.x.shape)
+    potential = np.where(distances >= radius, potentialHeight, potential)
+    return potential
 
-def torus(
+def stairwell(
             grid, 
-            innerRadiusRatio : float = .1, 
-            outerRadiusRatio : float = .4, 
-            potential : float = 1
-        ) -> np.ndarray:
-    length = np.abs(grid.x.min()) + np.abs(grid.x.max())
-    planeTerm = np.sqrt(((grid.x / length) ** 2) + ((grid.y / length) ** 2))
-    return potential * ((planeTerm - outerRadiusRatio) ** 2) + ((grid.z / length) ** 2) - (innerRadiusRatio ** 2)
+            unitPotentialHeight : float, 
+            widthRatios : list[float], 
+            heightRatios : list[float], 
+            unitLength : float  = 1
+        ) -> np.ndarray: 
+    assert len(heightRatios) == len(widthRatios)
+    potential : np.ndarray = np.zeros(grid.x.shape)
+    previousLength : float = 0
+    lengthRatio : float = 0
+    for ii in range(len(widthRatios)): 
+        lengthRatio += widthRatios[ii]
+        length = lengthRatio * unitLength
+        potential = np.where(
+                (grid.x <= (length))
+                        & (grid.x >= previousLength), 
+                heightRatios[ii] * unitPotentialHeight, 
+                potential
+            )
+        previousLength = length
+    return potential
 
