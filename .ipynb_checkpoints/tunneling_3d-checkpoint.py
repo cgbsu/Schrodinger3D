@@ -66,7 +66,6 @@
 # The licensed work is offered on an as-is basis without any warranty or liability. You may choose to offer warranty or liability for your derivative work, but only fully on your own responsibility.
 #
 
-
 from libschrodinger.numerov3d import *
 from libschrodinger.plot3d import *
 from libschrodinger.potentials3d import *
@@ -74,22 +73,21 @@ import matplotlib
 import pyqtgraph as pg
 
 def main(): 
-    with cp.cuda.Device(0) as device: 
-        pointCount : int = 15
-        grid = makeLinspaceGrid(pointCount, 1, 3)
-        potential = tunnelingCase(grid, .6, .1, 1)
-        print("Built potential, calculating wave functions")
-        waves = computeWaveFunction(
-                potential, 
-                energyCount = 10, 
-                gpuAccelerated = False, 
-                eigenValueType = EigenValueTypes.SMALLEST_MAGNITUDE
-            )
-        print("Done computing wave functions, with corresponding energies, please wait for graphical output.")
-        currentEnergy = 0
-        application = pg.mkQApp()
-        plots = GPUAcclerated3DPlotApplication(application, potential, waves)
-        application.instance().exec()
+    pointCount : int = 15
+    grid = makeLinspaceGrid(pointCount, 1, 3)
+    potential = tunnelingCase(grid, .6, .1, 1)
+    print("Built potential, calculating wave functions")
+    waves = computeWaveFunction(
+            potential, 
+            energyCount = 10, 
+            gpuAccelerated = False, 
+            eigenValueType = EigenValueTypes.SMALLEST_MAGNITUDE
+        )
+    print("Done computing wave functions, with corresponding energies, please wait for graphical output.")
+    currentEnergy = 0
+    application = pg.mkQApp()
+    plots = GPUAcclerated3DPlotApplication(application, potential, waves)
+    application.instance().exec()
 
 
 if __name__ == "__main__": 

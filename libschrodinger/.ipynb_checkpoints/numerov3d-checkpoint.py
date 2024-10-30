@@ -64,21 +64,25 @@
 # ## No Warranty or Liability
 # 
 # The licensed work is offered on an as-is basis without any warranty or liability. You may choose to offer warranty or liability for your derivative work, but only fully on your own responsibility.
-#
 
 import types
 from enum import Enum
 from functools import partial
 import numpy as np
-import cupy as cp
+import importlib.util
+cupy_loader = importlib.util.find_spec('cupy')
+if cupy_loader is not None: 
+    import cupy as cp
 import matplotlib.pyplot as plt
 from scipy.linalg import eigh_tridiagonal
 #from scipy import sparse
 #from scipy.sparse.linalg import eigsh
 import scipy.sparse.linalg as scipylin
-import cupyx.scipy.sparse.linalg as cplin
+if cupy_loader is not None: 
+    import cupyx.scipy.sparse.linalg as cplin
 
-import cupyx.scipy.sparse as cpsparse
+if cupy_loader is not None: 
+    import cupyx.scipy.sparse as cpsparse
 import scipy.sparse as scipysparse
 
 class EigenValueTypes(Enum):

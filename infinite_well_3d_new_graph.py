@@ -66,7 +66,6 @@
 # The licensed work is offered on an as-is basis without any warranty or liability. You may choose to offer warranty or liability for your derivative work, but only fully on your own responsibility.
 #
 
-
 from libschrodinger.numerov3d import *
 from libschrodinger.plot3d import *
 import matplotlib
