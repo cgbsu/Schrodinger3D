@@ -205,98 +205,27 @@
 #
 
 
-import numpy as np
-from dataclasses import dataclass
+from libschrodinger.numerov3d import *
+from libschrodinger.plot3d import *
+from libschrodinger.potentials3d import *
+import matplotlib
+import pyqtgraph as pg
 
-@dataclass
-class Stairwell: 
-    heights : list[float] 
-    widths : list[float] 
-    unitPotential : float
-    unitWidth : float
+def main(): 
+    with cp.cuda.Device(0): 
+        pointCount : int = 50
+        grid = makeLinspaceGrid(pointCount, 1, 3, halfSpaced = True)
+        potential = torus(grid)
+        print("Potential Max:", potential.max(), "Potential Min: ", potential.min())
+        print("Built potential, calculating wave functions")
+        waves = computeWaveFunction(potential, energyCount = 20) 
+        print("Done computing wave functions, with corresponding energies, please wait for graphical output.")
+        currentEnergy = 0
+        application = pg.mkQApp()
+        plots = GPUAcclerated3DPlotApplication(application, potential, waves)
+        application.instance().exec()
 
-UNIFORM_STAIRWELL = Stairwell(
-        [1.0 / 3.0, 2.0 / 3.0, 1.0], 
-        [1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0], 
-        .1, 
-        1.0
-    )
 
-
-def hydrogenAtom(
-            grid, 
-            centerX : float = .5, 
-            centerY : float = .5, 
-            centerZ : float = .5, 
-            bottom : float = 1, 
-            potential : float = .05
-        ) -> np.ndarray: 
-    return -potential / np.sqrt(
-            grid.x ** 2 \
-            + grid.y ** 2 \
-            + grid.z ** 2 \
-            + bottom ** 2 \
-        )
-    #return -potential / np.sqrt(
-    #        (grid.x - centerX) ** 2 \
-    #        + (grid.y - ceterY) ** 2 \
-    #        + (grid.z - centerZ) ** 2 \
-    #        + bottom ** 2 \
-    #    )
-
-def tunnelingCase(
-            grid, 
-            centerX : float, 
-            width : float, 
-            potential : float = .1, 
-            length : float = 1.0
-        ) -> np.ndarray: 
-    centerX *= length
-    width *= length
-    V = np.where(
-            (grid.x <= (centerX + width)) & (grid.x >= centerX), 
-            potential, 
-            0
-        )
-    return V
-
-def constantPotentialRegions(
-            grid, 
-            widths : float, 
-            heights : float,  
-            unitPotential : float = 1.0, 
-            unitWidth : float = 1.0
-        ) -> np.ndarray: 
-    potential = np.zeros(grid.x.shape)
-    length = 0
-    for ii in range(len(heights)): 
-        width = widths[ii] * unitWidth
-        height = heights[ii] * unitPotential
-        print(height)
-        potential = np.where(
-                (grid.x >= length) & (grid.x <= (length + width)), 
-                height, 
-                potential
-            )
-        length += width
-    return potential
-
-def stairwell(grid, configuration : Stairwell = UNIFORM_STAIRWELL) -> np.ndarray: 
-    return constantPotentialRegions(
-            grid, 
-            configuration.widths, 
-            configuration.heights, 
-            configuration.unitPotential, 
-            configuration.unitWidth
-        )
-
-def torus(
-            grid, 
-            innerRadiusRatio : float = .1, 
-            outerRadiusRatio : float = .4, 
-            potential : float = 1
-        ) -> np.ndarray:
-    length = np.abs(grid.x.min()) + np.abs(grid.x.max())
-    planeTerm = np.sqrt(((grid.x / length) ** 2) + ((grid.y / length) ** 2))
-    return potential * ((planeTerm - outerRadiusRatio) ** 2) + ((grid.z / length) ** 2) - (innerRadiusRatio ** 2)
+if __name__ == "__main__": 
+    main()
 
