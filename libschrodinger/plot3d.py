@@ -80,9 +80,14 @@ from libschrodinger.numerov3d import DimensionIndex
 from libschrodinger.numerov3d import MeshGrid
 from libschrodinger.numerov3d import WaveFunctions
 from matplotlib.colors import hsv_to_rgb
+import scipy.linalg
+
+from pathlib import Path
+DARK_STYLE_SHEET_PATH = Path(__file__).parent / "darkstyle.qss"
+LIGHT_STYLE_SHEET_PATH = Path(__file__).parent / "lightstyle.qss"
 
 # This function borrwed from https://github.com/quantum-visualizations/qmsolve/blob/main/qmsolve/util/colour_functions.py
-def complex_to_rgb(Z):
+def complex_to_rgb(Z, v_scalar = 1.0):
     """Convert complex values to their rgb equivalent.
     Parameters
     ----------
@@ -104,6 +109,7 @@ def complex_to_rgb(Z):
         v = r  / np.amax(r)  #alpha
     else: 
         v = r
+    v *= v_scalar
     c = hsv_to_rgb(np.moveaxis(np.array([h,s,v]) , 0, -1)) # --> tuple
     return c
 
@@ -186,6 +192,13 @@ def normalizeTo4x8BitsStaticAlpha(alpha, normalizedData : np.ndarray) -> np.ndar
     output[..., 0] = 0
     return output
 
+def sampleGaussian(coordinates, mean, expectationValue): 
+    coefficient = 1 / (mean * np.sqrt(2 * np.pi))
+    exponentCoefficient = -1 / (2 * (mean ** 2))
+    return (coefficient * np.exp(
+            exponentCoefficient \
+            * ((coordinates.ravel() - expectationValue) ** 2)
+        )).reshape(coordinates.shape)
 
 class GPUPlot3D: 
     def __init__(self, 
@@ -194,15 +207,42 @@ class GPUPlot3D:
                  noiseLevel = FLOAT_32_EPSILON, 
                  alpha = 50, 
                  position = None, 
-                 bit24NormalizationNotHSVToRGB = True
+                 bit24NormalizationNotHSVToRGB = True, 
+                 colorMinimum = 0, 
+                 colorMaximum = 255, 
+                 colorValueScalar = 1.0, 
+                 backgroundColor = (0, 255, 0), 
+                 axisNumbers = False
             ):
+        self.colorMinimum = colorMinimum
+        self.colorMaximum = colorMaximum
+        self.colorValueScalar = colorValueScalar
         self.application = application
         self.view = pggl.GLViewWidget()
         self.grid = pggl.GLGridItem()
         self.plot = None
         self.bit24NormalizationNotHSVToRGB = bit24NormalizationNotHSVToRGB 
-        self.newVolumePlot(data, noiseLevel, alpha)
+        self.newVolumePlot(data, noiseLevel, alpha, colorMinimum, colorMaximum)
         self.axis = pggl.GLAxisItem()
+        axisSize = np.round(self.pointCount * .2)
+        x_size = int(np.round(self.grid.size()[0]))
+        if axisNumbers == True: 
+            for xx in range(self.pointCount + 1): 
+                space = self.grid.spacing()[0]
+                self.view.addItem(pggl.GLTextItem(
+                        text=str(xx * space), 
+                        font=QtGui.QFont('Helvetica', 6), 
+                        pos = (xx * space, 0, self.pointCount / 2)
+                    ))
+            y_size = int(np.round(self.grid.size()[1]))
+            for yy in range(self.pointCount + 1): 
+                space = self.grid.spacing()[1]
+                self.view.addItem(pggl.GLTextItem(
+                        text=str(yy * space), 
+                        font=QtGui.QFont('Helvetica', 6), 
+                        pos = (0, yy * space, self.pointCount / 2)
+                    ))
+        self.axis.setSize(axisSize, axisSize, axisSize)
         #self.axisY = pggl.GLAxisItem()
         #self.axisZ = pggl.GLAxisItem()
         self.view.addItem(self.grid)
@@ -219,12 +259,23 @@ class GPUPlot3D:
         self.grid.translate(*tuple(self.position))
         self.view.pan(*self.centeredCoordinates)
         self.view.opts["distance"] = 3 * self.pointCount
-        self.view.setBackgroundColor(pg.mkColor(0, 255, 0))
+        self.view.setBackgroundColor(pg.mkColor(*backgroundColor))
 
     def updateAlpha(self, alpha): 
         self.colors[..., 3] = alpha
 
-    def newVolumePlot(self, data, noiseLevel = FLOAT_32_EPSILON, alpha = 50): 
+    def newVolumePlot(
+                self, 
+                data, 
+                noiseLevel = FLOAT_32_EPSILON, 
+                alpha = 50, 
+                colorMinimum = None, 
+                colorMaximum = None, 
+                colorValueScalar = None
+            ): 
+        self.colorMinimum = self.colorMinimum if colorMinimum == None else colorMinimum
+        self.colorMaximum = self.colorMaximum if colorMaximum == None else colorMaximum 
+        self.colorValueScalar = self.colorValueScalar if colorValueScalar == None else colorValueScalar
         if self.plot: 
             self.view.removeItem(self.plot)
         self.normalizedData = normalizeData(data, noiseLevel)
@@ -242,12 +293,15 @@ class GPUPlot3D:
         print("Noise Level: ", noiseLevel)
         self.pointCount = data.shape[0] 
         if self.bit24NormalizationNotHSVToRGB == True: 
-            fromColors = complex_to_rgb(self.normalizedData) * 255
+            sampled = sampleGaussian(self.normalizedData, .5, 0.0)
+            sampled /= sampled.max()
+            #sampled = np.sin(self.normalizedData.ravel() * np.pi).reshape(self.normalizedData.shape)
+            fromColors = complex_to_rgb(self.normalizedData, 1.0 - sampled) * (self.colorMaximum - self.colorMinimum) + self.colorMinimum
             self.colors = np.zeros(self.normalizedData.shape + (4, ))
             self.colors[..., 0] = fromColors[..., 0]
             self.colors[..., 1] = fromColors[..., 1]
             self.colors[..., 2] = fromColors[..., 2]
-            self.colors[..., 3] = np.round(self.normalizedData * 255)# * (alpha / 255))
+            self.colors[..., 3] = np.round(self.normalizedData * (self.colorMaximum - self.colorMinimum) + self.colorMinimum)# * (alpha / 255))
         else:
             self.colors = normalizeTo4x8BitScaledColor(self.normalizedData, alpha)
         maxColor = self.colors[dataMaxIndicies[0], dataMaxIndicies[1], dataMaxIndicies[2]]
@@ -274,13 +328,30 @@ def createSlider(
     return slider
 
 class GPUAcclerated3DPlotApplication: 
-    Q_LABEL_STYLE_SHEET = ""
-    "background-color: #262626;"
-    "color: #FFFFFF;"
-    "font-family: Titillium;"
-    "font-size: 18px;"
-    def __init__(self, application, potential, waves, currentEnergyIndex = 0): 
+    #"background-color: #262626;"
+    #Q_LABEL_STYLE_SHEET = ""
+    #"background-color: #141414;"
+    #"color: #FFFFFF;"
+    #"font-family: Titillium;"
+    #"font-size: 18px;"
+    def __init__(
+                self, 
+                application, 
+                potential, 
+                waves, 
+                currentEnergyIndex = 0, 
+                colorMinimum = 0, 
+                colorMaximum = 255, 
+                colorValueScalar = 1.0, 
+                plotBackgroundColor = (0, 255, 0), 
+                darkMode = True, 
+                axisNumbers = False
+            ): 
         self.application = application
+        if darkMode == True: 
+            with open(str(DARK_STYLE_SHEET_PATH), 'r') as sheet: 
+                self.application.setStyleSheet(sheet.read())
+        self.colorValueScalar = colorValueScalar
         self.waves = waves
         self.potential = potential
         self.mainWidget = QtWidgets.QWidget()
@@ -290,14 +361,52 @@ class GPUAcclerated3DPlotApplication:
         self.mainWidget.setLayout(self.layout)
         self.verticalContainer.setLayout(self.verticalLayout)
         self.currentEnergyIndex = currentEnergyIndex
-        self.plotPotential = GPUPlot3D(self.application, self.potential, bit24NormalizationNotHSVToRGB = True)
-        self.plotWaveFunction = GPUPlot3D(self.application, self.waves.waveFunctions[currentEnergyIndex], bit24NormalizationNotHSVToRGB = True)
-        self.plotProbabilities = GPUPlot3D(self.application, self.waves.probabilities[currentEnergyIndex], bit24NormalizationNotHSVToRGB = True)
-        self.plotDecibleProbabilities = GPUPlot3D(self.application, self.waves.decibleProbabilities[currentEnergyIndex], bit24NormalizationNotHSVToRGB = True)
+        self.colorMinimum = colorMinimum
+        self.colorMaximum = colorMaximum
+        self.plotPotential = GPUPlot3D(
+                    self.application, 
+                    self.potential, 
+                    bit24NormalizationNotHSVToRGB = True, 
+                    colorMinimum = colorMinimum, 
+                    colorMaximum = colorMaximum, 
+                    colorValueScalar = colorValueScalar, 
+                    backgroundColor = plotBackgroundColor, 
+                    axisNumbers = axisNumbers
+                )
+        self.plotWaveFunction = GPUPlot3D(
+                    self.application, 
+                    self.waves.waveFunctions[currentEnergyIndex], 
+                    bit24NormalizationNotHSVToRGB = True, 
+                    colorMinimum = colorMinimum, 
+                    colorMaximum = colorMaximum, 
+                    colorValueScalar = colorValueScalar, 
+                    backgroundColor = plotBackgroundColor, 
+                    axisNumbers = axisNumbers
+                )
+        self.plotProbabilities = GPUPlot3D(
+                    self.application, 
+                    self.waves.probabilities[currentEnergyIndex], 
+                    bit24NormalizationNotHSVToRGB = True, 
+                    colorMinimum = colorMinimum, 
+                    colorMaximum = colorMaximum, 
+                    colorValueScalar = colorValueScalar, 
+                    backgroundColor = plotBackgroundColor, 
+                    axisNumbers = axisNumbers
+                )
+        self.plotDecibleProbabilities = GPUPlot3D(
+                    self.application, 
+                    self.waves.decibleProbabilities[currentEnergyIndex], 
+                    bit24NormalizationNotHSVToRGB = True, 
+                    colorMinimum = colorMinimum, 
+                    colorMaximum = colorMaximum, 
+                    colorValueScalar = colorValueScalar, 
+                    backgroundColor = plotBackgroundColor, 
+                    axisNumbers = axisNumbers
+                )
         self.energyIndexLabel = QtWidgets.QLabel("Temp")
-        self.energyIndexLabel.setFixedHeight(10)
+        self.energyIndexLabel.setFixedHeight(18)
         self.energyValueLabel = QtWidgets.QLabel("Temp")
-        self.energyValueLabel.setFixedHeight(10)
+        self.energyValueLabel.setFixedHeight(18)
         self.layout.addWidget(self.energyIndexLabel, 0, 1)
         self.layout.addWidget(self.energyValueLabel, 0, 2)
         self.setLabels()
@@ -307,7 +416,7 @@ class GPUAcclerated3DPlotApplication:
             ]
         for row in self.plotLabels: 
             for label in row: 
-                label.setFixedHeight(10)
+                label.setFixedHeight(18)
         self.layout.addWidget(self.plotLabels[0][0], 1, 1)
         self.layout.addWidget(self.plotProbabilities.view, 2, 1)
         self.layout.addWidget(self.plotLabels[0][1], 1, 2)
@@ -331,7 +440,7 @@ class GPUAcclerated3DPlotApplication:
         self.verticalLayout.addWidget(self.mainWidget)
         self.alpha = 50
         self.alphaLabel = QtWidgets.QLabel("Alpha " + str(self.alpha))
-        self.alphaLabel.setFixedHeight(10)
+        self.alphaLabel.setFixedHeight(18)
         self.alphaSlider = createSlider( 
                     255, 
                     0, 
@@ -344,7 +453,7 @@ class GPUAcclerated3DPlotApplication:
         self.verticalLayout.addWidget(self.alphaLabel)
         self.noisePower = 16
         self.noiseLabel = QtWidgets.QLabel("Noise 10^(-" + str(self.noisePower) + ")")
-        self.noiseLabel.setFixedHeight(10)
+        self.noiseLabel.setFixedHeight(18)
         self.noiseSlider = createSlider( 
                 50, 
                 0, 

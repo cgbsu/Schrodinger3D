@@ -81,17 +81,22 @@ HIGH_TOP_STAIRWELL = Stairwell(
     )
 
 def main(): 
-    with cp.cuda.Device(0): 
-        pointCount : int = 15
-        grid = makeLinspaceGrid(pointCount, 1, 3)
-        potential = stairwell(grid, HIGH_TOP_STAIRWELL)
-        print("Built potential, calculating wave functions")
-        waves = computeWaveFunction(potential, energyCount = 20, gpuAccelerated = False, eigenValueType = EigenValueTypes.SMALLEST_MAGNITUDE) 
-        print("Done computing wave functions, with corresponding energies, please wait for graphical output.")
-        currentEnergy = 0
-        application = pg.mkQApp()
-        plots = GPUAcclerated3DPlotApplication(application, potential, waves)
-        application.instance().exec()
+    #with cp.cuda.Device(0): 
+    pointCount : int = 50
+    grid = makeLinspaceGrid(pointCount, 1, 3)
+    potential = stairwell(grid, HIGH_TOP_STAIRWELL)
+    print("Built potential, calculating wave functions")
+    waves = computeWaveFunction(
+            potential, 
+            energyCount = 20, 
+            gpuAccelerated = False, 
+            eigenValueType = EigenValueTypes.SMALLEST_MAGNITUDE
+        ) 
+    print("Done computing wave functions, with corresponding energies, please wait for graphical output.")
+    currentEnergy = 0
+    application = pg.mkQApp()
+    plots = GPUAcclerated3DPlotApplication(application, potential, waves, colorValueScalar = .5)
+    application.instance().exec()
 
 
 if __name__ == "__main__": 

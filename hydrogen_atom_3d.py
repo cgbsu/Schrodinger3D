@@ -73,20 +73,19 @@ import matplotlib
 import pyqtgraph as pg
 
 def main(): 
-    with cp.cuda.Device(0): 
-        pointCount : int = 15
-        grid = makeLinspaceGrid(pointCount, 1, 3)
-        potential = hydrogenAtom(grid, potential = .05)
-        waves = computeWaveFunction(
-                potential, 
-                energyCount = 20, 
-                gpuAccelerated = False, 
-                eigenValueType = EigenValueTypes.SMALLEST_MAGNITUDE
-            )
-        currentEnergy = 0
-        application = pg.mkQApp()
-        plots = GPUAcclerated3DPlotApplication(application, potential, waves)
-        application.instance().exec()
+    pointCount : int = 15
+    grid = makeLinspaceGrid(pointCount, 1, 3)
+    potential = hydrogenAtom(grid, potential = .05)
+    waves = computeWaveFunction(
+            potential, 
+            energyCount = 20, 
+            gpuAccelerated = False, 
+            eigenValueType = EigenValueTypes.SMALLEST_MAGNITUDE
+        )
+    currentEnergy = 0
+    application = pg.mkQApp()
+    plots = GPUAcclerated3DPlotApplication(application, potential, waves)
+    application.instance().exec()
 
 
 if __name__ == "__main__": 

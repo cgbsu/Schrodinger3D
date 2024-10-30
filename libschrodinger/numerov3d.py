@@ -70,15 +70,20 @@ import types
 from enum import Enum
 from functools import partial
 import numpy as np
-import cupy as cp
+import importlib.util
+cupy_loader = importlib.util.find_spec('cupy')
+if cupy_loader is not None: 
+    import cupy as cp
 import matplotlib.pyplot as plt
 from scipy.linalg import eigh_tridiagonal
 #from scipy import sparse
 #from scipy.sparse.linalg import eigsh
 import scipy.sparse.linalg as scipylin
-import cupyx.scipy.sparse.linalg as cplin
+if cupy_loader is not None: 
+    import cupyx.scipy.sparse.linalg as cplin
 
-import cupyx.scipy.sparse as cpsparse
+if cupy_loader is not None: 
+    import cupyx.scipy.sparse as cpsparse
 import scipy.sparse as scipysparse
 
 class EigenValueTypes(Enum):
