@@ -1,4 +1,4 @@
-# This work is under the Copywrite Christopher A. Greeley (2024) and it is distributed
+# This work is under the Copyright Christopher A. Greeley (2024) and it is distributed
 # under the No Kill Do No Harm License, a legally non-binding sumemry is as follows: 
 # 
 # # No Kill Do No Harm Licence – Summary
