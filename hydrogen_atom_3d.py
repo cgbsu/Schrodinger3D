@@ -74,7 +74,7 @@ import pyqtgraph as pg
 
 def main(): 
     pointCount : int = 50
-    grid = makeLinspaceGrid(pointCount, 1, 3)
+    grid = makeLinspaceGrid(pointCount, 1, 3, halfSpaced = True)
     potential = hydrogenAtom(grid, potential = .05)
     waves = computeWaveFunction(
             potential, 
