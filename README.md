@@ -21,7 +21,7 @@
     </td>
 </table>
 
-<video src="https://github.com/cgbsu/Schrodinger3D/blob/05bf25a28b072f4e6a3045fdcdafb353285044fa/ScreenshotsAndGraphs/qm_stairwell_0.webm"/>
+
 
 ## Matplotlib
 ![Image](ScreenshotsAndGraphs/Screenshot_from_2022_12_10_00_43_22.png)
