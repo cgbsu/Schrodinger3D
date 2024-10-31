@@ -1,26 +1,27 @@
 # Screenshots: 
 ## GPU Accelerated (pyqtgraph)
+
 <table>
     <tr>
-        <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_23_20_39.png" width="25%" height="25%"/></td>
-        <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_22_07_42.png" width="25%" height="25%"/></td>
+        <td><img src="ScreenshotsAndGraphs/qm_stairwell_0.gif" width="50%" height="50%"/></td>
+        <td><img src="ScreenshotsAndGraphs/qm_inverse_torus_0.gif" width="50%" height="50%"/></td>
     </td>
     <tr>
-        <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_21_43_14.png" width="25%" height="25%"/></td>"
-        <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_22_27_31.png" width="25%" height="25%"/></td>"
-    </td>
-</table>
-<table>
-    <tr>
-        <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_23_20_39.png" width="25%" height="25%"/></td>
-        <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_22_07_42.png" width="25%" height="25%"/></td>
-    </td>
-    <tr>
-        <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_21_43_14.png" width="25%" height="25%"/></td>"
-        <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_22_27_31.png" width="25%" height="25%"/></td>"
+        <td><img src="ScreenshotsAndGraphs/qm_torus_0.gif" width="50%" height="50%"/></td>
+        <td><img src="ScreenshotsAndGraphs/qm_tunneling_0.gif" width="50%" height="50%"/></td>
     </td>
 </table>
 
+<table>
+    <tr>
+        <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_23_20_39.png" width="50%" height="50%"/></td>
+        <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_22_07_42.png" width="50%" height="50%"/></td>
+    </td>
+    <tr>
+        <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_21_43_14.png" width="50%" height="50%"/></td>
+        <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_22_27_31.png" width="50%" height="50%"/></td>
+    </td>
+</table>
 
 
 ## Matplotlib
