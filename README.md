@@ -20,7 +20,7 @@
         <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_22_27_31.png" width="25%" height="25%"/></td>"
     </td>
 
-![Alt Text](ScreenshotsAndGraphs/qm_stairwell_0.mp4)
+![Alt Text](https://github.com/cgbsu/Schrodinger3D/blob/05bf25a28b072f4e6a3045fdcdafb353285044fa/ScreenshotsAndGraphs/qm_stairwell_0.webm)
 
 ## Matplotlib
 ![Image](ScreenshotsAndGraphs/Screenshot_from_2022_12_10_00_43_22.png)
