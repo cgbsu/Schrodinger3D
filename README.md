@@ -19,6 +19,7 @@
         <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_21_43_14.png" width="25%" height="25%"/></td>"
         <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_22_27_31.png" width="25%" height="25%"/></td>"
     </td>
+</table>
 
 <video src="https://github.com/cgbsu/Schrodinger3D/blob/05bf25a28b072f4e6a3045fdcdafb353285044fa/ScreenshotsAndGraphs/qm_stairwell_0.webm"/>
 
