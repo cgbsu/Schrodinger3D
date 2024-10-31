@@ -192,12 +192,12 @@ def normalizeTo4x8BitsStaticAlpha(alpha, normalizedData : np.ndarray) -> np.ndar
     output[..., 0] = 0
     return output
 
-def sampleGaussian(coordinates, mean, expectationValue): 
-    coefficient = 1 / (mean * np.sqrt(2 * np.pi))
-    exponentCoefficient = -1 / (2 * (mean ** 2))
+def sampleGaussian(coordinates, sigma, expectationValue, center = 0): 
+    coefficient = 1 / (sigma* np.sqrt(2 * np.pi))
+    exponentCoefficient = -1 / (2 * (sigma** 2))
     return (coefficient * np.exp(
             exponentCoefficient \
-            * ((coordinates.ravel() - expectationValue) ** 2)
+            * ((coordinates.ravel() + center - expectationValue) ** 2)
         )).reshape(coordinates.shape)
 
 class GPUPlot3D: 
@@ -205,19 +205,21 @@ class GPUPlot3D:
                  application, 
                  data : np.ndarray, 
                  noiseLevel = FLOAT_32_EPSILON, 
-                 alpha = 50, 
+                 alpha = int(.5 * 255), 
                  position = None, 
                  bit24NormalizationNotHSVToRGB = True, 
                  colorMinimum = 0, 
                  colorMaximum = 255, 
                  colorValueScalar = 1.0, 
-                 backgroundColor = (0, 255, 0), 
-                 axisNumbers = False
+                 backgroundColor = (255, 255, 255), 
+                 axisNumbers = False, 
+                 enableRedChannel = False
             ):
         self.colorMinimum = colorMinimum
         self.colorMaximum = colorMaximum
         self.colorValueScalar = colorValueScalar
         self.application = application
+        self.enableRedChannel = enableRedChannel 
         self.view = pggl.GLViewWidget()
         self.grid = pggl.GLGridItem()
         self.plot = None
@@ -262,19 +264,24 @@ class GPUPlot3D:
         self.view.setBackgroundColor(pg.mkColor(*backgroundColor))
 
     def updateAlpha(self, alpha): 
-        self.colors[..., 3] = alpha
+        sampled = sampleGaussian(self.normalizedData, alpha / 255, 1.0)
+        sinSampled = np.sin(self.normalizedData * np.pi / 2)
+        sampled *= sinSampled
+        self.colors[..., 3] = np.round(sampled * 255)
 
     def newVolumePlot(
                 self, 
                 data, 
                 noiseLevel = FLOAT_32_EPSILON, 
-                alpha = 50, 
+                alpha = int(.5 * 255), 
                 colorMinimum = None, 
                 colorMaximum = None, 
-                colorValueScalar = None
+                colorValueScalar = None, 
+                enableRedChannel = None
             ): 
         self.colorMinimum = self.colorMinimum if colorMinimum == None else colorMinimum
         self.colorMaximum = self.colorMaximum if colorMaximum == None else colorMaximum 
+        self.enableRedChannel = self.enableRedChannel if enableRedChannel == None else enableRedChannel 
         self.colorValueScalar = self.colorValueScalar if colorValueScalar == None else colorValueScalar
         if self.plot: 
             self.view.removeItem(self.plot)
@@ -293,15 +300,18 @@ class GPUPlot3D:
         print("Noise Level: ", noiseLevel)
         self.pointCount = data.shape[0] 
         if self.bit24NormalizationNotHSVToRGB == True: 
-            sampled = sampleGaussian(self.normalizedData, .5, 0.0)
-            sampled /= sampled.max()
-            #sampled = np.sin(self.normalizedData.ravel() * np.pi).reshape(self.normalizedData.shape)
-            fromColors = complex_to_rgb(self.normalizedData, 1.0 - sampled) * (self.colorMaximum - self.colorMinimum) + self.colorMinimum
+            fromColors = complex_to_rgb(self.normalizedData)
+            fromColors[..., 2] = self.normalizedData
+            fromColors[..., 1] = 1.0 - self.normalizedData
+            if self.enableRedChannel == True: 
+                fromColors[..., 0] = ((fromColors[..., 1] ** 2) + (fromColors[..., 2] ** 2))
+                fromColors[..., 0] /= fromColors[..., 0].max()
             self.colors = np.zeros(self.normalizedData.shape + (4, ))
-            self.colors[..., 0] = fromColors[..., 0]
-            self.colors[..., 1] = fromColors[..., 1]
-            self.colors[..., 2] = fromColors[..., 2]
-            self.colors[..., 3] = np.round(self.normalizedData * (self.colorMaximum - self.colorMinimum) + self.colorMinimum)# * (alpha / 255))
+            colorDifferential = (self.colorMaximum - self.colorMinimum)
+            self.colors[..., 0] = fromColors[..., 0] * colorDifferential + self.colorMinimum
+            self.colors[..., 1] = fromColors[..., 1] * colorDifferential + self.colorMinimum
+            self.colors[..., 2] = fromColors[..., 2] * colorDifferential + self.colorMinimum
+            self.updateAlpha(alpha)
         else:
             self.colors = normalizeTo4x8BitScaledColor(self.normalizedData, alpha)
         maxColor = self.colors[dataMaxIndicies[0], dataMaxIndicies[1], dataMaxIndicies[2]]
@@ -343,9 +353,10 @@ class GPUAcclerated3DPlotApplication:
                 colorMinimum = 0, 
                 colorMaximum = 255, 
                 colorValueScalar = 1.0, 
-                plotBackgroundColor = (0, 255, 0), 
+                plotBackgroundColor = (16, 16, 16), 
                 darkMode = True, 
-                axisNumbers = False
+                axisNumbers = False, 
+                enableRedChannel = False
             ): 
         self.application = application
         if darkMode == True: 
@@ -363,6 +374,7 @@ class GPUAcclerated3DPlotApplication:
         self.currentEnergyIndex = currentEnergyIndex
         self.colorMinimum = colorMinimum
         self.colorMaximum = colorMaximum
+        self.enableRedChannel = enableRedChannel
         self.plotPotential = GPUPlot3D(
                     self.application, 
                     self.potential, 
@@ -371,7 +383,8 @@ class GPUAcclerated3DPlotApplication:
                     colorMaximum = colorMaximum, 
                     colorValueScalar = colorValueScalar, 
                     backgroundColor = plotBackgroundColor, 
-                    axisNumbers = axisNumbers
+                    axisNumbers = axisNumbers, 
+                    enableRedChannel = enableRedChannel
                 )
         self.plotWaveFunction = GPUPlot3D(
                     self.application, 
@@ -381,7 +394,8 @@ class GPUAcclerated3DPlotApplication:
                     colorMaximum = colorMaximum, 
                     colorValueScalar = colorValueScalar, 
                     backgroundColor = plotBackgroundColor, 
-                    axisNumbers = axisNumbers
+                    axisNumbers = axisNumbers, 
+                    enableRedChannel = enableRedChannel
                 )
         self.plotProbabilities = GPUPlot3D(
                     self.application, 
@@ -391,7 +405,8 @@ class GPUAcclerated3DPlotApplication:
                     colorMaximum = colorMaximum, 
                     colorValueScalar = colorValueScalar, 
                     backgroundColor = plotBackgroundColor, 
-                    axisNumbers = axisNumbers
+                    axisNumbers = axisNumbers, 
+                    enableRedChannel = enableRedChannel
                 )
         self.plotDecibleProbabilities = GPUPlot3D(
                     self.application, 
@@ -401,7 +416,8 @@ class GPUAcclerated3DPlotApplication:
                     colorMaximum = colorMaximum, 
                     colorValueScalar = colorValueScalar, 
                     backgroundColor = plotBackgroundColor, 
-                    axisNumbers = axisNumbers
+                    axisNumbers = axisNumbers, 
+                    enableRedChannel = enableRedChannel
                 )
         self.energyIndexLabel = QtWidgets.QLabel("Temp")
         self.energyIndexLabel.setFixedHeight(18)
@@ -438,7 +454,7 @@ class GPUAcclerated3DPlotApplication:
         self.layout.addWidget(self.nextEnergyButton, 5, 2)
         self.layout.addWidget(self.previousEnergyButton, 5, 1)
         self.verticalLayout.addWidget(self.mainWidget)
-        self.alpha = 50
+        self.alpha = int(.5 * 255)
         self.alphaLabel = QtWidgets.QLabel("Alpha " + str(self.alpha))
         self.alphaLabel.setFixedHeight(18)
         self.alphaSlider = createSlider( 

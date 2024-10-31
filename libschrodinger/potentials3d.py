@@ -155,9 +155,16 @@ def torus(
             grid, 
             innerRadiusRatio : float = .1, 
             outerRadiusRatio : float = .4, 
-            potential : float = 1
+            potential : float = 1, 
+            inverted = False
         ) -> np.ndarray:
+
     length = np.abs(grid.x.min()) + np.abs(grid.x.max())
     planeTerm = np.sqrt(((grid.x / length) ** 2) + ((grid.y / length) ** 2))
-    return potential * ((planeTerm - outerRadiusRatio) ** 2) + ((grid.z / length) ** 2) - (innerRadiusRatio ** 2)
+    left = ((planeTerm - outerRadiusRatio) ** 2) + ((grid.z / length) ** 2)
+    right = (innerRadiusRatio ** 2)
+    if inverted == False: 
+        return np.where(left < right, potential, 0)
+    else: 
+        return potential * left - right
 

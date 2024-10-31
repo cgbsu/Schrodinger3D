@@ -95,7 +95,7 @@ def main():
     print("Done computing wave functions, with corresponding energies, please wait for graphical output.")
     currentEnergy = 0
     application = pg.mkQApp()
-    plots = GPUAcclerated3DPlotApplication(application, potential, waves, colorValueScalar = .5)
+    plots = GPUAcclerated3DPlotApplication(application, potential, waves, colorMinimum = 64)#, colorMaximum = 254)#, colorValueScalar = .5)
     application.instance().exec()
 
 

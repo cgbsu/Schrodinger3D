@@ -75,14 +75,14 @@ import pyqtgraph as pg
 def main(): 
     pointCount : int = 50
     grid = makeLinspaceGrid(pointCount, 1, 3, halfSpaced = True)
-    potential = torus(grid)
+    potential = torus(grid, inverted = False)
     print("Potential Max:", potential.max(), "Potential Min: ", potential.min())
     print("Built potential, calculating wave functions")
     waves = computeWaveFunction(potential, energyCount = 20, gpuAccelerated = False) 
     print("Done computing wave functions, with corresponding energies, please wait for graphical output.")
     currentEnergy = 0
     application = pg.mkQApp()
-    plots = GPUAcclerated3DPlotApplication(application, potential, waves)
+    plots = GPUAcclerated3DPlotApplication(application, potential, waves)#, colorMinimum = 64, colorMaximum = 128)
     application.instance().exec()
 
 
