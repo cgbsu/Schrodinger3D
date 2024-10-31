@@ -1,11 +1,28 @@
 # Screenshots: 
+## GPU Accelerated (pyqtgraph)
+<table>
+    <tr>
+        <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_23_20_39.png" width="25%" height="25%"/></td>
+        <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_22_07_42.png" width="25%" height="25%"/></td>
+    </td>
+    <tr>
+        <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_21_43_14.png" width="25%" height="25%"/></td>"
+        <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_22_27_31.png" width="25%" height="25%"/></td>"
+    </td>
+</table>
+<table>
+    <tr>
+        <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_23_20_39.png" width="25%" height="25%"/></td>
+        <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_22_07_42.png" width="25%" height="25%"/></td>
+    </td>
+    <tr>
+        <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_21_43_14.png" width="25%" height="25%"/></td>"
+        <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_22_27_31.png" width="25%" height="25%"/></td>"
+    </td>
+![Alt Text](ScreenshotsAndGraphs/qm_stairwell_0.mp4)
 ## Matplotlib
 ![Image](ScreenshotsAndGraphs/Screenshot_from_2022_12_10_00_43_22.png)
 ![Image](ScreenshotsAndGraphs/Screenshot_from_2022_12_10_00_53_54.png)
-## GPU Accelerated (pyqtgraph)
-![Image](ScreenshotsAndGraphs/Screenshot_from_2024_10_30_04_34_12.png)
-![Image](ScreenshotsAndGraphs/Screenshot_from_2024_10_30_04_34_33.png)
-![Image](ScreenshotsAndGraphs/Screenshot_from_2024_10_30_04_35_06.png)
 
 # Methods: 
 Uses the `Numerov` technique of discretizing a second the second derivative of a seond order ordinary differential equation with no first derivative. This is important for equations like the schrodinger equation, which do not always have an analytic solution, but do have a numerical one. The problem is most simulation techniques (Euler, Runge-Kutta) require the first order derivative, thus they can be used to time-evolve a known steady state of the schrodinger equation, but can not find a solution in space without an analytic solution. The two most popular methods to resolve this are the Numerov method (here) and the Transfer Matrix Method. This simulation solves for an eigen function using CuPy's GPU accelerated `eigsh` (SciPy can be substituted for CPU). The discretized second order derivative is encoded into this sparse matrix along a diagonal ((N^3)x(N^3)) and added into the potential term (encoded into an (N^3)x(N^3) matrix). The matrix is NxNxN. There is a null boundry condition surrounding the cubic area on all sides. Lower dimension (2D, 1D, NxN, and 1xN respectivley), simulations can be done as well, currently graphing these is not explicitly supported. However there are 3 ways to graph 3d simulations, one can scroll through 2D layer images, Matplotlib can be used, and presently GPU accelerated 3D plotting is in progress.

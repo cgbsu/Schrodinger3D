@@ -75,7 +75,7 @@ import pyqtgraph as pg
 def main(): 
     pointCount : int = 50
     grid = makeLinspaceGrid(pointCount, 1, 3, halfSpaced = True)
-    potential = torus(grid, inverted = False)
+    potential = torus(grid, inverted = True)
     print("Potential Max:", potential.max(), "Potential Min: ", potential.min())
     print("Built potential, calculating wave functions")
     waves = computeWaveFunction(potential, energyCount = 20, gpuAccelerated = False) 

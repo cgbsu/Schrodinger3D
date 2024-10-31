@@ -73,13 +73,13 @@ import matplotlib
 import pyqtgraph as pg
 
 def main(): 
-    pointCount : int = 15
+    pointCount : int = 50
     grid = makeLinspaceGrid(pointCount, 1, 3)
     potential = tunnelingCase(grid, .6, .1, 1)
     print("Built potential, calculating wave functions")
     waves = computeWaveFunction(
             potential, 
-            energyCount = 10, 
+            energyCount = 20, 
             gpuAccelerated = False, 
             eigenValueType = EigenValueTypes.SMALLEST_MAGNITUDE
         )
