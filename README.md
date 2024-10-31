@@ -19,7 +19,9 @@
         <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_21_43_14.png" width="25%" height="25%"/></td>"
         <td><img src="ScreenshotsAndGraphs/Screenshot_from_2024_10_30_22_27_31.png" width="25%" height="25%"/></td>"
     </td>
+
 ![Alt Text](ScreenshotsAndGraphs/qm_stairwell_0.mp4)
+
 ## Matplotlib
 ![Image](ScreenshotsAndGraphs/Screenshot_from_2022_12_10_00_43_22.png)
 ![Image](ScreenshotsAndGraphs/Screenshot_from_2022_12_10_00_53_54.png)
